@@ -47,11 +47,18 @@
   <script>
 
   (function redirectIfHasSavedTicket(){
-    const saved = localStorage.getItem("ultimoTiketToken");
-    if(saved){
-      location.replace(`./pase.html?token=${encodeURIComponent(saved)}`);
-    }
-  })();
+  const isStandalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+
+  if (!isStandalone) return; // ✅ en navegador normal NO redirigir
+
+  const saved = localStorage.getItem("ultimoTiketToken");
+  if (saved) {
+    location.replace(`./pase.html?token=${encodeURIComponent(saved)}`);
+  }
+})();
+
 
     function go() {
     clearError();
