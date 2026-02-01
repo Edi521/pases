@@ -377,91 +377,89 @@
     }
 
     async function downloadPdfFromPassCard_() {
-  const btn = document.getElementById("btnPdf");
-  const card = document.getElementById("passCard");
-  const actions = document.querySelector(".actions");
+      const btn = $("btnPdf");
+      const card = $("passCard");
+      const actionsBar = $("actionsBar");
 
-  try {
-    clearError();
-    if (btn) { btn.disabled = true; btn.textContent = "Generando…"; }
+      try {
+        clearError();
+        if (btn) { btn.disabled = true; btn.textContent = "Generando…"; }
+        if (!card) throw new Error("No se encontró #passCard.");
 
-    if (!card) throw new Error("No se encontró #passCard.");
+        await loadScriptOnce_("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
+        await loadScriptOnce_("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
 
-    // Cargar libs bajo demanda
-    await loadScriptOnce_("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
-    await loadScriptOnce_("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
+        const jsPDF = window.jspdf && window.jspdf.jsPDF;
+        if (!jsPDF) throw new Error("jsPDF no disponible (window.jspdf.jsPDF).");
+        if (typeof html2canvas === "undefined") throw new Error("html2canvas no disponible.");
 
-    if (!window.jspdf || !window.jspdf.jsPDF) throw new Error("jsPDF no disponible (window.jspdf.jsPDF).");
-    if (typeof html2canvas === "undefined") throw new Error("html2canvas no disponible.");
+        // Ocultar botones (fuera del ticket) durante captura
+        if (actionsBar) actionsBar.classList.add("pdf-hide");
 
-    // Ocultar acciones (botones) SOLO para el PDF
-    if (actions) actions.classList.add("pdf-hide");
+        // Forzar colores para captura (evita fondo blanco)
+        const prevBg = card.style.backgroundColor;
+        const prevColor = card.style.color;
+        card.style.backgroundColor = "#111827";
+        card.style.color = "#e5e7eb";
 
-    // Guardar estilos actuales
-    const prevBg = card.style.backgroundColor;
-    const prevColor = card.style.color;
-    const prevPaddingBottom = card.style.paddingBottom;
+        let canvas;
+        try {
+          canvas = await html2canvas(card, { scale: 3, backgroundColor: "#111827" });
+        } finally {
+          card.style.backgroundColor = prevBg;
+          card.style.color = prevColor;
+          if (actionsBar) actionsBar.classList.remove("pdf-hide");
+        }
 
-    // Forzar tema oscuro + dar aire extra abajo para evitar cortes
-    card.style.backgroundColor = "#111827";
-    card.style.color = "#e5e7eb";
-    card.style.paddingBottom = "28px";
+        const imgData = canvas.toDataURL("image/png");
 
-    let canvas;
-    try {
-      canvas = await html2canvas(card, {
-        scale: 2,
-        backgroundColor: "#111827"
-      });
-    } finally {
-      // Restaurar UI
-      card.style.backgroundColor = prevBg;
-      card.style.color = prevColor;
-      card.style.paddingBottom = prevPaddingBottom;
-      if (actions) actions.classList.remove("pdf-hide");
+        // ✅ PDF A4, ticket grande y centrado (se ve bien en cualquier visor)
+        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = pdf.internal.pageSize.getHeight();
+
+        // Márgenes “visuales” en la hoja
+        const maxW = pageW * 0.92;
+        const maxH = pageH * 0.85;
+
+        // Proporción del pase
+        const ratio = canvas.width / canvas.height;
+
+        // Primero probamos por altura, luego verificamos ancho
+        let drawH = maxH;
+        let drawW = ratio * drawH;
+
+        // Si por altura se pasa de ancho, ajustamos por ancho
+        if (drawW > maxW) {
+        drawW = maxW;
+        drawH = drawW / ratio;
+        }
+
+        // Centrado exacto
+        const x = (pageW - drawW) / 2;
+        const y = (pageH - drawH) / 2;
+
+        pdf.addImage(imgData, "PNG", x, y, drawW, drawH);
+
+        // Descargar (Blob)
+        const blob = pdf.output("blob");
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "pase.pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+
+      } catch (err) {
+        console.error(err);
+        showError("PDF ERROR: " + (err?.message || String(err)));
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = "Descargar PDF"; }
+      }
     }
-
-    const imgData = canvas.toDataURL("image/png");
-
-    const { jsPDF } = window.jspdf;
-
-    // ✅ PDF del tamaño exacto del canvas (evita recortes en móviles)
-    const PADDING = 24; // px alrededor
-
-    const pdf = new jsPDF({
-      unit: "px",
-      format: [canvas.width + PADDING * 2, canvas.height + PADDING * 2],
-      hotfixes: ["px_scaling"]
-    });
-
-    // Fondo oscuro del PDF (por si el visor aplica blanco)
-    pdf.setFillColor(17, 24, 39); // #111827
-    pdf.rect(0, 0, canvas.width + PADDING * 2, canvas.height + PADDING * 2, "F");
-
-    // Insertar imagen con padding
-    pdf.addImage(imgData, "PNG", PADDING, PADDING, canvas.width, canvas.height);
-
-    // Descargar (Blob + link) — confiable en desktop y Android
-    const blob = pdf.output("blob");
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "pase.pdf";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    setTimeout(() => URL.revokeObjectURL(url), 1500);
-
-  } catch (err) {
-    console.error(err);
-    showError("PDF ERROR: " + (err?.message || String(err)));
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = "Descargar PDF"; }
-  }
-}
-
 
     function wirePdfButton_() {
       const btnPdf = $("btnPdf");
