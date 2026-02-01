@@ -379,89 +379,79 @@
     async function downloadPdfFromPassCard_() {
   const btn = document.getElementById("btnPdf");
   const card = document.getElementById("passCard");
-  const actionsBar = document.getElementById("actionsBar");
+  const actions = document.querySelector(".actions");
 
   try {
     clearError();
     if (btn) { btn.disabled = true; btn.textContent = "Generando…"; }
+
     if (!card) throw new Error("No se encontró #passCard.");
 
+    // Cargar libs bajo demanda
     await loadScriptOnce_("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
     await loadScriptOnce_("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
 
-    const jsPDF = window.jspdf && window.jspdf.jsPDF;
-    if (!jsPDF) throw new Error("jsPDF no disponible (window.jspdf.jsPDF).");
+    if (!window.jspdf || !window.jspdf.jsPDF) throw new Error("jsPDF no disponible (window.jspdf.jsPDF).");
     if (typeof html2canvas === "undefined") throw new Error("html2canvas no disponible.");
 
-    // Ocultar botones durante captura
-    if (actionsBar) actionsBar.classList.add("pdf-hide");
+    // Ocultar acciones (botones) SOLO para el PDF
+    if (actions) actions.classList.add("pdf-hide");
 
-    // Forzar colores para captura
+    // Guardar estilos actuales
     const prevBg = card.style.backgroundColor;
     const prevColor = card.style.color;
+    const prevPaddingBottom = card.style.paddingBottom;
+
+    // Forzar tema oscuro + dar aire extra abajo para evitar cortes
     card.style.backgroundColor = "#111827";
     card.style.color = "#e5e7eb";
+    card.style.paddingBottom = "28px";
 
     let canvas;
     try {
-      canvas = await html2canvas(card, { scale: 2, backgroundColor: "#111827" });
+      canvas = await html2canvas(card, {
+        scale: 2,
+        backgroundColor: "#111827"
+      });
     } finally {
+      // Restaurar UI
       card.style.backgroundColor = prevBg;
       card.style.color = prevColor;
-      if (actionsBar) actionsBar.classList.remove("pdf-hide");
+      card.style.paddingBottom = prevPaddingBottom;
+      if (actions) actions.classList.remove("pdf-hide");
     }
 
     const imgData = canvas.toDataURL("image/png");
 
-    // ✅ A4 LANDSCAPE (ideal para ticket)
-    const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const { jsPDF } = window.jspdf;
 
-    const pageW = pdf.internal.pageSize.getWidth();   // ~297
-    const pageH = pdf.internal.pageSize.getHeight();  // ~210
+    // ✅ PDF del tamaño exacto del canvas (evita recortes en móviles)
+    const PADDING = 24; // px alrededor
 
-    const margin = 10; // mm
-    const maxW = pageW - margin * 2;
-    const maxH = pageH - margin * 2;
+    const pdf = new jsPDF({
+      unit: "px",
+      format: [canvas.width + PADDING * 2, canvas.height + PADDING * 2],
+      hotfixes: ["px_scaling"]
+    });
 
-    // Proporción real de la imagen capturada
-    const ratio = canvas.width / canvas.height;
+    // Fondo oscuro del PDF (por si el visor aplica blanco)
+    pdf.setFillColor(17, 24, 39); // #111827
+    pdf.rect(0, 0, canvas.width + PADDING * 2, canvas.height + PADDING * 2, "F");
 
-    // Escalar para que quepa en W y en H (sin recorte)
-    let drawW = maxW;
-    let drawH = drawW / ratio;
+    // Insertar imagen con padding
+    pdf.addImage(imgData, "PNG", PADDING, PADDING, canvas.width, canvas.height);
 
-    if (drawH > maxH) {
-      drawH = maxH;
-      drawW = drawH * ratio;
-    }
-
-    // Centrado + clamp (nunca negativo)
-    let x = (pageW - drawW) / 2;
-    let y = (pageH - drawH) / 2;
-
-    if (x < margin) x = margin;
-    if (y < margin) y = margin;
-
-    // DEBUG: muestra números para confirmar (puedes quitarlo después)
-    showError(
-      `PDF DEBUG\n` +
-      `page: ${pageW.toFixed(1)}x${pageH.toFixed(1)} mm\n` +
-      `img ratio: ${ratio.toFixed(3)}\n` +
-      `draw: ${drawW.toFixed(1)}x${drawH.toFixed(1)} mm\n` +
-      `pos: x=${x.toFixed(1)} y=${y.toFixed(1)}`
-    );
-
-    pdf.addImage(imgData, "PNG", x, y, drawW, drawH, undefined, "FAST");
-
-    // Descargar
+    // Descargar (Blob + link) — confiable en desktop y Android
     const blob = pdf.output("blob");
     const url = URL.createObjectURL(blob);
+
     const a = document.createElement("a");
     a.href = url;
     a.download = "pase.pdf";
     document.body.appendChild(a);
     a.click();
     a.remove();
+
     setTimeout(() => URL.revokeObjectURL(url), 1500);
 
   } catch (err) {
