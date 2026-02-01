@@ -12,235 +12,207 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
 
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:0; background:#0b1220; color:#e5e7eb; }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 18px; }
-
-    h1 { font-size: 20px; margin: 0 0 8px; }
-    .muted { color:#9ca3af; font-size: 14px; }
-
-    .label { 
-        color:#9ca3af; 
-        font-size: 12px; 
-        margin-top: 10px; 
-    }
-    .value { 
-        font-size: 16px; 
-        /*margin-top: 2px; */
-        word-break: break-word; 
-    }
-
-    .badge { display:inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; border:1px solid #334155; }
-    .ok { background:#052e1a; border-color:#14532d; }
-    .warn { background:#2a1d05; border-color:#78350f; }
-    .bad { background:#2a0a0a; border-color:#7f1d1d; }
-
-    .btn {
-      padding: 10px 12px;
-      border-radius: 12px;
-      border:1px solid #334155;
-      background:#0f172a;
-      color:#e5e7eb;
-      cursor:pointer;
-      text-decoration:none;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap: 8px;
-      user-select: none;
-    }
-    .btn:active { transform: translateY(1px); }
-
-    .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; gap: 10px; }
-
-    .error {
-      background:#2a0a0a;
-      border:1px solid #7f1d1d;
-      border-radius:12px;
-      padding:12px;
-      display:none;
-      margin-top:12px;
-      white-space: pre-wrap;
-    }
-
-    /* Banner instalación */
-    #installBanner {
-      display:none;
-      position: sticky;
-      top: 0;
-      z-index: 9999;
-      background: #0f172a;
-      border-bottom: 1px solid #334155;
-    }
-
-    /* Ocultar cosas solo al exportar PDF */
-    .pdf-hide { display:none !important; }
-
-    /* ====== TICKET LAYOUT CONSISTENTE ====== */
-    #passCard {
-      width: min(700px, 94vw);
-      aspect-ratio: auto;    /* ticket */
-      height: auto;
-      overflow: hidden;         /* el ticket NO crece (por eso botones van fuera) */
-
-      background:#111827;
-      border:1px solid #1f2937;
-      border-radius: 16px;
-      padding: 16px;
-      box-sizing: border-box;
-
-      display: none;            /* se muestra al cargar ticket */
-      margin: 0 auto;
-    }
-
-    .row { 
-        display:flex;
-        height: auto; 
-        gap: 14px; height: 100%; 
-        align-items: flex-start; 
-        flex-wrap: nowrap; 
-    }
-    .col { min-width: 0; }
-
-    /* Izquierda: info */
-    .col-info { flex: 1 1 auto; min-width: 0; }
-
-    /* Derecha: QR fijo */
-    .col-qr { flex: 0 0 240px; min-width: 240px; display:flex; flex-direction: column; }
-
-    .qr {
-      width: 100%;
-      aspect-ratio: 1 / 1;
-      background:#fff;
-      border-radius: 14px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding: 10px;
-      box-sizing: border-box;
-    }
-
-    #qrImg img, #qrImg canvas {
-      width: 100% !important;
-      height: 100% !important;
-      display:block;
-    }
-
-    /* Ajustes tipográficos dentro del ticket */
-    #passCard .label { margin-top: 8px; }
-    #passCard .value { font-size: 15px; }
-
-    /* ===== Barra de acciones FUERA del ticket (no se recorta) ===== */
-    #actionsBar{
-      width: min(700px, 94vw);
-      margin: 12px auto 0;
-      display: none;                  /* se muestra al cargar ticket */
-      grid-template-columns: 1fr 1fr; /* 2 botones iguales */
-      gap: 10px;
-    }
-
-    #actionsBar .btn{
-      width: 100%;
-      height: 44px;
-      font-weight: 700;
-    }
-
-    #btnInstall{
-      background: #2563eb;
-      border-color: #1d4ed8;
-    }
-
-    #btnPdf{
-      background: #0f172a;
-      border-color: #334155;
-    }
-
     /* ===============================
-   3 MEDIA QUERIES: grande / mediana / pequeña
+   BASE (MÓVIL Y TABLET POR DEFECTO)
    =============================== */
 
-/* ---------- PANTALLAS GRANDES ---------- */
-@media (min-width: 1024px) {
-  /* Ticket más cómodo en desktop */
-  #passCard {
-    width: min(760px, 92vw);
-    padding: 18px;
-  }
-
-  /* QR grande */
-  .col-qr { flex: 0 0 260px; min-width: 260px; }
-  .qr { padding: 12px; border-radius: 14px; }
-
-  /* Tipografía */
-  #passCard .value { font-size: 15px; line-height: 1.35; }
-  #passCard .label { font-size: 12px; margin-top: 8px; }
-
-  /* Botones */
-  #actionsBar { width: min(760px, 92vw); }
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  margin: 0;
+  background: #0b1220;
+  color: #e5e7eb;
 }
 
-    /* ---------- PANTALLAS MEDIANAS ---------- */
-    @media (min-width: 600px) and (max-width: 1023px) {
-    #passCard {
-        aspect-ratio: auto;
-        height: auto;
-        overflow: visible;
-        padding-bottom: 20px;
-    }
+.wrap {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 18px;
+}
 
-    .row{
-        height: auto;
-        align-items: flex-start;
-    }
+h1 {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
 
-    .col-qr { 
-        flex: 0 0 200px; 
-        min-width: 200px; 
-    }
-    .qr { padding: 10px; border-radius: 14px; }
+.muted {
+  color: #9ca3af;
+  font-size: 14px;
+}
 
-    #passCard .value { 
-        font-size: 14px; 
-        line-height: 1.4; 
-    }
-    #passCard .label { font-size: 12px; margin-top: 8px; }
+.label {
+  color: #9ca3af;
+  font-size: 12px;
+  margin-top: 8px;
+}
 
-    #actionsBar { width: min(700px, 94vw); }
-    }
+.value {
+  font-size: 14px;
+  margin-top: 2px;
+  line-height: 1.45;
+  word-break: break-word;
+}
 
-    /* ---------- PANTALLAS PEQUEÑAS ---------- */
-    @media (max-width: 599px) {
-    /* En móvil, el ticket se hace más compacto */
-    #passCard {
-        aspect-ratio: auto;
-        height: auto;
-        overflow: visible;
-        padding-bottom: 18px;
-    }
+/* Badge */
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  border: 1px solid #334155;
+}
 
-    .row{
-        height: auto;
-        align-items: flex-start;
-    }
+.ok { background: #052e1a; border-color: #14532d; }
+.warn { background: #2a1d05; border-color: #78350f; }
+.bad { background: #2a0a0a; border-color: #7f1d1d; }
 
-    /* QR más chico para dejar espacio a la hora */
-    .col-qr { 
-        flex: 0 0 160px; 
-        min-width: 160px; 
-    }
-    .qr { padding: 8px; border-radius: 12px; }
+/* Botones */
+.btn {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #e5e7eb;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 600;
+}
 
-    /* Tipografía más pequeña + line-height para que NO se corte la hora */
-    #passCard .value { font-size: 13px; line-height: 1.45; }
-    #passCard .label { 
-        font-size: 11px; 
-        margin-top: 6px; 
-    }
+.btn:active {
+  transform: translateY(1px);
+}
 
-    /* Botones apilados en móvil */
-    #actionsBar { width: 94vw; grid-template-columns: 1fr; }
-    }
+/* Topbar */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+/* ===============================
+   TICKET (MÓVIL / TABLET)
+   =============================== */
+
+#passCard {
+  width: 94vw;
+  max-width: 700px;
+
+  /* 🔑 CLAVE: SIN ALTURA FIJA */
+  aspect-ratio: auto;
+  height: auto;
+  overflow: visible;
+
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 16px;
+  box-sizing: border-box;
+
+  margin: 0 auto;
+  display: none;
+}
+
+/* Layout interno */
+.row {
+  display: flex;
+  gap: 14px;
+
+  /* 🔑 CLAVE: NO estirar */
+  height: auto;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+
+.col-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.col-qr {
+  flex: 0 0 170px;
+  min-width: 170px;
+}
+
+.qr {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 8px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#qrImg img,
+#qrImg canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+/* ===============================
+   ACCIONES (FUERA DEL TICKET)
+   =============================== */
+
+#actionsBar {
+  width: 94vw;
+  max-width: 700px;
+  margin: 12px auto 0;
+  display: none;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+#btnInstall {
+  background: #2563eb;
+  border-color: #1d4ed8;
+}
+
+#btnPdf {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+/* ===============================
+   SOLO PC / DESKTOP (RIGIDEZ)
+   =============================== */
+
+@media (min-width: 1024px) {
+
+  #passCard {
+    width: min(760px, 92vw);
+
+    /* ✅ AQUÍ y SOLO AQUÍ es rígido */
+    aspect-ratio: 90 / 55;
+    overflow: hidden;
+  }
+
+  .row {
+    height: 100%;
+    align-items: stretch;
+  }
+
+  .col-qr {
+    flex: 0 0 240px;
+    min-width: 240px;
+  }
+
+  .value {
+    font-size: 15px;
+    line-height: 1.35;
+  }
+
+  #actionsBar {
+    width: min(760px, 92vw);
+    grid-template-columns: 1fr 1fr;
+  }
+}
 
   </style>
+
 </head>
 
 <body>
