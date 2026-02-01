@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mi pase</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#111827" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:0; background:#0b1220; color:#e5e7eb; }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 18px; }
+    .card { background:#111827; border:1px solid #1f2937; border-radius: 14px; padding: 16px; }
+    .row { display:flex; gap: 12px; flex-wrap: wrap; }
+    .col { flex: 1; min-width: 220px; }
+    h1 { font-size: 20px; margin: 0 0 8px; }
+    .muted { color:#9ca3af; font-size: 14px; }
+    .label { color:#9ca3af; font-size: 12px; margin-top: 10px; }
+    .value { font-size: 16px; margin-top: 2px; word-break: break-word; }
+    .badge { display:inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; border:1px solid #334155; }
+    .ok { background:#052e1a; border-color:#14532d; }
+    .warn { background:#2a1d05; border-color:#78350f; }
+    .bad { background:#2a0a0a; border-color:#7f1d1d; }
+    .btn { padding: 10px 12px; border-radius: 10px; border:1px solid #334155; background:#0f172a; color:#e5e7eb; cursor:pointer; }
+    .btn:active { transform: translateY(1px); }
+    .qr { width: 220px; height: 220px; background:#fff; border-radius: 12px; display:flex; align-items:center; justify-content:center; }
+    .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; }
+    .error { background:#2a0a0a; border:1px solid #7f1d1d; border-radius:12px; padding:12px; display:none; margin-top:12px; }
+
+    #installBanner { display:none; position:sticky; top:0; z-index:9999; background:#0f172a; border-bottom:1px solid #334155; }
+
+    @media print {
+      body { background:#fff; color:#000; }
+      .topbar, #installBanner, .actions, .muted { display:none !important; }
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="installBanner">
+  <div style="max-width:720px;margin:0 auto;padding:12px 18px;display:flex;gap:10px;">
+    <div style="flex:1">
+      <strong>📌 Obtener boleto</strong>
+      <div class="muted">Agrega este boleto a tu pantalla principal.</div>
+    </div>
+    <button id="installBtn" class="btn">Agregar</button>
+    <button id="installCloseBtn" class="btn">Cerrar</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <h1>🎟️ Mi pase</h1>
+      <div class="muted" id="subtitle">Cargando…</div>
+    </div>
+    <a class="btn" href="index.html">Buscar otro</a>
+  </div>
+
+  <div id="passCard" class="card" style="display:none;">
+    <div class="row">
+      <div class="col">
+        <div class="label">Estado</div>
+        <div class="value" id="status"></div>
+
+        <div class="label">Nombre</div>
+        <div class="value" id="nombre"></div>
+
+        <div class="label">Asiento</div>
+        <div class="value" id="asiento"></div>
+
+        <div class="label">Evento</div>
+        <div class="value" id="nombreEvento"></div>
+
+        <div class="label">Lugar</div>
+        <div class="value" id="lugarDescripcion"></div>
+
+        <div class="label">Hora</div>
+        <div class="value" id="hora"></div>
+      </div>
+
+      <div class="col">
+        <div class="label">QR</div>
+        <div class="qr"><div id="qrImg"></div></div>
+
+        <div class="actions" style="margin-top:10px;display:flex;gap:10px;">
+          <button class="btn" id="btnInstall">Obtener boleto</button>
+          <button class="btn" id="btnPdf">Descargar PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="errorBox" class="error"></div>
+</div>
+
+<!-- QR local (ligero, no bloquea) -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<script>
+  const API_BASE_URL = "https://script.google.com/macros/s/AKfycbxb7tNEfgSrmGHAYDYR76rJw3eS9XJ2XG2JaDppxiS1ls0j_iQJck5599wGbkBlvxezZg/exec";
+
+  const $ = id => document.getElementById(id);
+
+  function showError(msg){ $("errorBox").style.display="block"; $("errorBox").textContent=msg; }
+  function clearError(){ $("errorBox").style.display="none"; }
+
+  function getToken(){ return new URL(location.href).searchParams.get("token"); }
+
+  function setStatusBadge(status){
+    const s = (status||"").toUpperCase();
+    let cls="badge", txt=s;
+    if(s==="ISSUED"){ cls+=" ok"; txt="VÁLIDO"; }
+    else if(s==="USED"){ cls+=" warn"; txt="YA USADO"; }
+    else cls+=" bad";
+    $("status").innerHTML=`<span class="${cls}">${txt}</span>`;
+  }
+
+  function setQr(link){
+    $("qrImg").innerHTML="";
+    new QRCode($("qrImg"), { text: link, width:200, height:200 });
+  }
+
+  async function loadTicket(token){
+    clearError();
+    const res = await fetch(`${API_BASE_URL}?action=ticket&token=${encodeURIComponent(token)}`);
+    const data = await res.json();
+
+    if(!data.ok){ showError("Pase no encontrado"); return; }
+
+    const t = data.ticket;
+    $("subtitle").textContent="Pase cargado";
+    $("passCard").style.display="block";
+
+    setStatusBadge(t.status);
+    $("nombre").textContent=t.nombre||"-";
+    $("asiento").textContent=t.asiento||"-";
+    $("nombreEvento").textContent=t.nombreEvento||"-";
+    $("lugarDescripcion").textContent=t.lugarDescripcion||"-";
+    $("hora").textContent=t.hora||"-";
+
+    const link = `${location.origin}${location.pathname}?token=${encodeURIComponent(token)}`;
+    setQr(link);
+
+    $("btnPdf").onclick = downloadPdf;
+  }
+
+  async function loadScript(src){
+    return new Promise((res,rej)=>{
+      if(document.querySelector(`script[src="${src}"]`)) return res();
+      const s=document.createElement("script");
+      s.src=src; s.onload=res; s.onerror=rej;
+      document.head.appendChild(s);
+    });
+  }
+
+  async function downloadPdf(){
+    await loadScript("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
+    await loadScript("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
+
+    const canvas = await html2canvas($("passCard"), { scale:2 });
+    const img = canvas.toDataURL("image/png");
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF();
+    pdf.addImage(img,"PNG",10,10,190,0);
+    pdf.save("pase.pdf");
+  }
+
+  const token = getToken();
+  if(!token) showError("Falta token");
+  else loadTicket(token);
+</script>
+
+</body>
+</html>
