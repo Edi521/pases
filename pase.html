@@ -18,8 +18,16 @@
     h1 { font-size: 20px; margin: 0 0 8px; }
     .muted { color:#9ca3af; font-size: 14px; }
 
-    .label { color:#9ca3af; font-size: 12px; margin-top: 10px; }
-    .value { font-size: 16px; margin-top: 2px; word-break: break-word; }
+    .label { 
+        color:#9ca3af; 
+        font-size: 12px; 
+        margin-top: 10px; 
+    }
+    .value { 
+        font-size: 16px; 
+        /*margin-top: 2px; */
+        word-break: break-word; 
+    }
 
     .badge { display:inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; border:1px solid #334155; }
     .ok { background:#052e1a; border-color:#14532d; }
@@ -70,7 +78,8 @@
     /* ====== TICKET LAYOUT CONSISTENTE ====== */
     #passCard {
       width: min(700px, 94vw);
-      aspect-ratio: 90 / 55;    /* ticket */
+      aspect-ratio: auto;    /* ticket */
+      height: auto;
       overflow: hidden;         /* el ticket NO crece (por eso botones van fuera) */
 
       background:#111827;
@@ -83,7 +92,13 @@
       margin: 0 auto;
     }
 
-    .row { display:flex; gap: 14px; height: 100%; align-items: stretch; flex-wrap: nowrap; }
+    .row { 
+        display:flex;
+        height: auto; 
+        gap: 14px; height: 100%; 
+        align-items: flex-start; 
+        flex-wrap: nowrap; 
+    }
     .col { min-width: 0; }
 
     /* Izquierda: info */
@@ -247,7 +262,7 @@
           <div class="label">Lugar</div>
           <div class="value" id="lugarDescripcion"></div>
 
-          <div class="label">Hora</div>
+          <div class="label">Fecha y hora</div>
           <div class="value" id="hora"></div>
         </div>
 
