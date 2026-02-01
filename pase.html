@@ -181,14 +181,27 @@
     /* ---------- PANTALLAS MEDIANAS ---------- */
     @media (min-width: 600px) and (max-width: 1023px) {
     #passCard {
-        width: min(700px, 94vw);
-        padding: 16px;
+        aspect-ratio: auto;
+        height: auto;
+        overflow: visible;
+        padding-bottom: 20px;
     }
 
-    .col-qr { flex: 0 0 220px; min-width: 220px; }
+    .row{
+        height: auto;
+        align-items: flex-start;
+    }
+
+    .col-qr { 
+        flex: 0 0 200px; 
+        min-width: 200px; 
+    }
     .qr { padding: 10px; border-radius: 14px; }
 
-    #passCard .value { font-size: 14px; line-height: 1.4; }
+    #passCard .value { 
+        font-size: 14px; 
+        line-height: 1.4; 
+    }
     #passCard .label { font-size: 12px; margin-top: 8px; }
 
     #actionsBar { width: min(700px, 94vw); }
@@ -198,21 +211,30 @@
     @media (max-width: 599px) {
     /* En móvil, el ticket se hace más compacto */
     #passCard {
-    width: 94vw;
-    padding: 14px;
-    padding-bottom: 26px;   /* ✅ más espacio para la hora */
-    aspect-ratio: auto;     /* ✅ deja crecer el alto */
-    overflow: visible;      /* ✅ no recorta */
-    min-height: 330px;      /* ✅ garantiza espacio (ajustable) */
+        aspect-ratio: auto;
+        height: auto;
+        overflow: visible;
+        padding-bottom: 18px;
+    }
+
+    .row{
+        height: auto;
+        align-items: flex-start;
     }
 
     /* QR más chico para dejar espacio a la hora */
-    .col-qr { flex: 0 0 160px; min-width: 160px; }
+    .col-qr { 
+        flex: 0 0 160px; 
+        min-width: 160px; 
+    }
     .qr { padding: 8px; border-radius: 12px; }
 
     /* Tipografía más pequeña + line-height para que NO se corte la hora */
     #passCard .value { font-size: 13px; line-height: 1.45; }
-    #passCard .label { font-size: 11px; margin-top: 7px; }
+    #passCard .label { 
+        font-size: 11px; 
+        margin-top: 6px; 
+    }
 
     /* Botones apilados en móvil */
     #actionsBar { width: 94vw; grid-template-columns: 1fr; }
