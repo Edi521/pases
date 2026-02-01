@@ -1,13 +1,14 @@
 {
-  "name": "Tickets",
-  "short_name": "Tickets",
-  "start_url": "./",
+  "name": "Boletos",
+  "short_name": "Boletos",
+  "start_url": "/index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0b1220",
   "theme_color": "#111827",
   "icons": [
     {
-        "src": "icons/icon.png",
+        "src": "./icons/icon.png",
         "sizes": "512x512",
         "type": "image/jpg"
     }

@@ -44,6 +44,14 @@
   </div>
 
   <script>
+
+    (function redirectIfHasSavedTicket(){
+      const saved = localStorage.getItem("ultimoTiketToken");
+      if(saved){
+        location.href= `pase.html?token=${encodeURIComponent(saved)}`;
+      }
+    })();
+
     function showError(msg) {
       const box = document.getElementById("errorBox");
       box.style.display = "block";
@@ -70,6 +78,11 @@
     document.getElementById("tokenInput").addEventListener("keydown", (e) => {
       if (e.key === "Enter") go();
     });
+
+    if("serviceWorker" in navigator){
+      navigator.serviceWorker.register("./servicie-worker.js")
+        .catch(console.erro);
+    }
   </script>
 </body>
 </html>

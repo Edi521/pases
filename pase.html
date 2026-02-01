@@ -313,12 +313,18 @@ h1 {
     const API_BASE_URL = "https://script.google.com/macros/s/AKfycbxb7tNEfgSrmGHAYDYR76rJw3eS9XJ2XG2JaDppxiS1ls0j_iQJck5599wGbkBlvxezZg/exec";
 
     // ========= Service Worker =========
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+    if("serviceWorker" in navigator){
+      navigator.serviceWorker.register("./servicie-worker.js")
+        .catch(console.erro);
     }
 
     // ========= Helpers =========
     const $ = (id) => document.getElementById(id);
+
+    document.querySelector('a[href="index.html"]')?.addEventListener("click", () => {
+      localStorage.removeItem("lastTicketToken");
+    });
+
 
     function showError(msg) {
       const box = $("errorBox");
@@ -583,6 +589,9 @@ h1 {
         showError("Pase no encontrado.");
         if (subtitle) subtitle.textContent = "No encontrado";
         return;
+      }else{
+        //Guardar token como "último pase"
+        localStorage.setItem("ultimoTiketToken",token);
       }
 
       const t = data.ticket;
