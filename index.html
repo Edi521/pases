@@ -131,6 +131,12 @@
       navigator.serviceWorker.register("./service-worker.js").catch(() => {});
     }
 
+        function isAndroid_() {
+    const ua = navigator.userAgent || "";
+    return /Android/i.test(ua);
+    }
+
+
     // =========================
     // Helpers
     // =========================
@@ -307,24 +313,30 @@
       close.onclick = () => hideInstallBanner_();
 
       btn.onclick = async () => {
-        // ANDROID: diálogo nativo
-        if (deferredInstallPrompt) {
-          deferredInstallPrompt.prompt();
-          try { await deferredInstallPrompt.userChoice; } catch (_) {}
-          deferredInstallPrompt = null;
-          hideInstallBanner_();
-          return;
-        }
+            // ANDROID / Chrome: diálogo nativo si está disponible
+            if (deferredInstallPrompt) {
+                deferredInstallPrompt.prompt();
+                try { await deferredInstallPrompt.userChoice; } catch (_) { }
+                deferredInstallPrompt = null;
+                hideInstallBanner_();
+                return;
+            }
 
-        // iOS: instrucciones
-        if (isIOS_()) {
-          alert('En iPhone:\n1) Toca "Compartir" (cuadro con flecha)\n2) "Agregar a pantalla de inicio"');
-          return;
-        }
+            // iOS: no se puede abrir instalador por código
+            if (isIOS_()) {
+                alert('En iPhone:\n1) Toca "Compartir"\n2) "Agregar a pantalla de inicio"');
+                return;
+            }
 
-        // otros
-        alert("Usa el menú del navegador para 'Agregar a pantalla principal'.");
-      };
+            // Android sin prompt disponible (heurística / no instalable / webview)
+            if (isAndroid_()) {
+                alert('En Android:\n1) Toca el menú ⋮ del navegador\n2) "Agregar a pantalla principal" o "Instalar app"');
+                return;
+            }
+
+            alert('Usa el menú del navegador para "Agregar a pantalla principal".');
+        };
+
 
       // iOS: no hay beforeinstallprompt, lo mostramos igual
       if (isIOS_() && !isStandalone_()) {
