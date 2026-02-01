@@ -183,12 +183,16 @@
     @media (max-width: 599px) {
     /* En móvil, el ticket se hace más compacto */
     #passCard {
-        width: 94vw;
-        padding: 14px;
+    width: 94vw;
+    padding: 14px;
+    padding-bottom: 26px;   /* ✅ más espacio para la hora */
+    aspect-ratio: auto;     /* ✅ deja crecer el alto */
+    overflow: visible;      /* ✅ no recorta */
+    min-height: 330px;      /* ✅ garantiza espacio (ajustable) */
     }
 
     /* QR más chico para dejar espacio a la hora */
-    .col-qr { flex: 0 0 170px; min-width: 170px; }
+    .col-qr { flex: 0 0 160px; min-width: 160px; }
     .qr { padding: 8px; border-radius: 12px; }
 
     /* Tipografía más pequeña + line-height para que NO se corte la hora */
