@@ -267,38 +267,24 @@ async function downloadPdfFromPassCard_() {
 
     const { jsPDF } = window.jspdf;
 
-    // 🎟️ Tamaño ticket (mm)
-    const anchoTiket = 90;
-    const altoTiket = 55;
-    const margen = 2;
+// Ticket: altura fija (mm) y ancho calculado según proporción real del pase
+const MARGIN = 3;              // margen interno en mm
+const TICKET_H = 55;           // altura del ticket (mm)
 
-    // ✅ MÁS ESTABLE: NO usar orientation; el tamaño ancho>alto ya es "landscape"
-    const pdf = new jsPDF({
-      unit: "mm",
-      format: [anchoTiket, altoTiket]
-    });
+// Proporción real del pase capturado
+const ratio = canvas.width / canvas.height;
 
-    // Área útil con márgenes
-    const usableW = anchoTiket - margen * 2;
-    const usableH = altoTiket - margen * 2;
+// Ancho proporcional
+const TICKET_W = TICKET_H * ratio;
 
-    // Escalado proporcional
-    const imgRatio = canvas.width / canvas.height;
+// Creamos un PDF del tamaño exacto del pase + márgenes
+const pdf = new jsPDF({
+  unit: "mm",
+  format: [TICKET_W + MARGIN * 2, TICKET_H + MARGIN * 2]
+});
 
-    let imgW = usableW;
-    let imgH = imgW / imgRatio;
-
-    if (imgH > usableH) {
-      imgH = usableH;
-      imgW = imgH * imgRatio;
-    }
-
-    // Centrado exacto
-    const x = (anchoTiket - imgW) / 2;
-    const y = (altoTiket - imgH) / 2;
-
-    // Meter imagen
-    pdf.addImage(imgData, "PNG", x, y, imgW, imgH);
+// Dibujamos la imagen ocupando toda el área útil
+pdf.addImage(imgData, "PNG", MARGIN, MARGIN, TICKET_W, TICKET_H);
 
     // Descargar (Blob + link) — más confiable que pdf.save()
     const blob = pdf.output("blob");
