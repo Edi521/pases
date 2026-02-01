@@ -40,6 +40,12 @@
 
     .pdf-hide { display: none !important; }
 
+    /* Modo exportación para que el layout NO se rompa en la captura */
+    .export-mode .actions { display: none !important; }
+    .export-mode .row { flex-wrap: nowrap !important; }
+    .export-mode .col { min-width: 0 !important; } /* permite encoger columnas */
+
+
   </style>
 </head>
 
@@ -233,20 +239,20 @@ async function downloadPdfFromPassCard_() {
   try {
     clearError();
     if (btn) { btn.disabled = true; btn.textContent = "Generando…"; }
-
     if (!card) throw new Error("No se encontró #passCard.");
 
-    // Cargar librerías bajo demanda
+    // Cargar libs bajo demanda
     await loadScriptOnce_("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
     await loadScriptOnce_("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
 
-    if (!window.jspdf || !window.jspdf.jsPDF) throw new Error("jsPDF no disponible (window.jspdf.jsPDF).");
+    if (!window.jspdf?.jsPDF) throw new Error("jsPDF no disponible.");
     if (typeof html2canvas === "undefined") throw new Error("html2canvas no disponible.");
 
-    // Ocultar botones para el PDF
+    // ---- MODO EXPORT (evita que se rompa el layout y oculta botones) ----
+    card.classList.add("export-mode");
     if (actions) actions.classList.add("pdf-hide");
 
-    // Forzar colores para captura (evita fondo blanco)
+    // Forzar tema oscuro en captura
     const prevBg = card.style.backgroundColor;
     const prevColor = card.style.color;
     card.style.backgroundColor = "#111827";
@@ -256,37 +262,37 @@ async function downloadPdfFromPassCard_() {
     try {
       canvas = await html2canvas(card, { scale: 2, backgroundColor: "#111827" });
     } finally {
-      // Restaurar UI
+      // restaurar UI
       card.style.backgroundColor = prevBg;
       card.style.color = prevColor;
       if (actions) actions.classList.remove("pdf-hide");
+      card.classList.remove("export-mode");
     }
 
-    // Convertir a imagen
     const imgData = canvas.toDataURL("image/png");
 
     const { jsPDF } = window.jspdf;
 
-// Ticket: altura fija (mm) y ancho calculado según proporción real del pase
-const MARGIN = 3;              // margen interno en mm
-const TICKET_H = 55;           // altura del ticket (mm)
+    // ✅ Ticket: ancho fijo (90mm) y altura proporcional a la captura
+    const MARGIN = 3;          // mm
+    const TICKET_W = 90;       // mm (ancho fijo)
 
-// Proporción real del pase capturado
-const ratio = canvas.width / canvas.height;
+    const ratio = canvas.height / canvas.width; // ojo: alto/ancho
+    const TICKET_H = TICKET_W * ratio;          // altura proporcional
 
-// Ancho proporcional
-const TICKET_W = TICKET_H * ratio;
+    // Página exacta del ticket + márgenes
+    const pageW = TICKET_W + MARGIN * 2;
+    const pageH = TICKET_H + MARGIN * 2;
 
-// Creamos un PDF del tamaño exacto del pase + márgenes
-const pdf = new jsPDF({
-  unit: "mm",
-  format: [TICKET_W + MARGIN * 2, TICKET_H + MARGIN * 2]
-});
+    const pdf = new jsPDF({
+      unit: "mm",
+      format: [pageW, pageH]
+    });
 
-// Dibujamos la imagen ocupando toda el área útil
-pdf.addImage(imgData, "PNG", MARGIN, MARGIN, TICKET_W, TICKET_H);
+    // Dibujar la imagen ocupando el área útil exacta
+    pdf.addImage(imgData, "PNG", MARGIN, MARGIN, TICKET_W, TICKET_H);
 
-    // Descargar (Blob + link) — más confiable que pdf.save()
+    // Descargar blob (más confiable)
     const blob = pdf.output("blob");
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
