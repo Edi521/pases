@@ -13,72 +13,90 @@
 
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:0; background:#0b1220; color:#e5e7eb; }
-    .wrap { max-width: 900px; margin: 0 auto; padding: 18px; }
-    .row { display:flex; gap: 12px; flex-wrap: wrap; }
-    .col { flex: 1; min-width: 220px; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 18px; }
+
     h1 { font-size: 20px; margin: 0 0 8px; }
     .muted { color:#9ca3af; font-size: 14px; }
+
     .label { color:#9ca3af; font-size: 12px; margin-top: 10px; }
     .value { font-size: 16px; margin-top: 2px; word-break: break-word; }
+
     .badge { display:inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; border:1px solid #334155; }
     .ok { background:#052e1a; border-color:#14532d; }
     .warn { background:#2a1d05; border-color:#78350f; }
     .bad { background:#2a0a0a; border-color:#7f1d1d; }
-    .btn { padding: 10px 12px; border-radius: 10px; border:1px solid #334155; background:#0f172a; color:#e5e7eb; cursor:pointer; text-decoration:none; display:inline-block; }
+
+    .btn {
+      padding: 10px 12px;
+      border-radius: 12px;
+      border:1px solid #334155;
+      background:#0f172a;
+      color:#e5e7eb;
+      cursor:pointer;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap: 8px;
+      user-select: none;
+    }
     .btn:active { transform: translateY(1px); }
+
     .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; gap: 10px; }
-    .error { background:#2a0a0a; border:1px solid #7f1d1d; border-radius:12px; padding:12px; display:none; margin-top:12px; white-space: pre-wrap; }
+
+    .error {
+      background:#2a0a0a;
+      border:1px solid #7f1d1d;
+      border-radius:12px;
+      padding:12px;
+      display:none;
+      margin-top:12px;
+      white-space: pre-wrap;
+    }
 
     /* Banner instalación */
-    #installBanner { display:none; position:sticky; top:0; z-index:9999; background:#0f172a; border-bottom:1px solid #334155; }
+    #installBanner {
+      display:none;
+      position: sticky;
+      top: 0;
+      z-index: 9999;
+      background: #0f172a;
+      border-bottom: 1px solid #334155;
+    }
 
     /* Ocultar cosas solo al exportar PDF */
     .pdf-hide { display:none !important; }
 
-    /* Modo exportación para que NO se rompa el layout al capturar */
-    .export-mode .actions { display:none !important; }
-    .export-mode .row { flex-wrap: nowrap !important; }
-    .export-mode .col { min-width: 0 !important; }
-
     /* ====== TICKET LAYOUT CONSISTENTE ====== */
     #passCard {
-      width: min(520px, 92vw);
-      aspect-ratio: 90 / 55;
-      height: auto;
-      overflow: hidden;
+      width: min(700px, 94vw);
+      aspect-ratio: 90 / 55;    /* ticket */
+      overflow: hidden;         /* el ticket NO crece (por eso botones van fuera) */
 
       background:#111827;
       border:1px solid #1f2937;
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 16px;
       box-sizing: border-box;
+
+      display: none;            /* se muestra al cargar ticket */
+      margin: 0 auto;
     }
 
-    /* 2 columnas: datos + QR (no se rompe) */
-    #passCard .row {
-      height: 100%;
-      flex-wrap: nowrap;
-      align-items: stretch;
-    }
+    .row { display:flex; gap: 14px; height: 100%; align-items: stretch; flex-wrap: nowrap; }
+    .col { min-width: 0; }
 
-    #passCard .col:first-child {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
+    /* Izquierda: info */
+    .col-info { flex: 1 1 auto; min-width: 0; }
 
-    #passCard .col:last-child {
-      flex: 0 0 190px;
-      min-width: 190px;
-    }
+    /* Derecha: QR fijo */
+    .col-qr { flex: 0 0 240px; min-width: 240px; display:flex; flex-direction: column; }
 
-    /* QR cuadrado responsivo */
     .qr {
       width: 100%;
-      height: auto;
       aspect-ratio: 1 / 1;
-      max-width: 190px;
       background:#fff;
-      border-radius: 12px;
+      border-radius: 14px;
       display:flex;
       align-items:center;
       justify-content:center;
@@ -96,60 +114,51 @@
     #passCard .label { margin-top: 8px; }
     #passCard .value { font-size: 15px; }
 
-    @media (max-width: 420px) {
-      #passCard { width: 96vw; padding: 14px; }
-      #passCard .col:last-child { flex-basis: 150px; min-width: 150px; }
-      #passCard .value { font-size: 14px; }
-      .qr { max-width: 150px; padding: 8px; }
+    /* ===== Barra de acciones FUERA del ticket (no se recorta) ===== */
+    #actionsBar{
+      width: min(700px, 94vw);
+      margin: 12px auto 0;
+      display: none;                  /* se muestra al cargar ticket */
+      grid-template-columns: 1fr 1fr; /* 2 botones iguales */
+      gap: 10px;
     }
 
-    /* Barra de acciones abajo del ticket */
-#actionsBar{
-  margin-top: 10px;
-  display: grid;
-  grid-template-columns: 1fr 1fr; /* 2 botones mismo ancho */
-  gap: 10px;
-}
+    #actionsBar .btn{
+      width: 100%;
+      height: 44px;
+      font-weight: 700;
+    }
 
-/* Botones: mismo alto, centrados, sin “verse chiquitos” */
-#actionsBar .btn{
-  width: 100%;
-  height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  font-weight: 600;
-  line-height: 1;
-}
+    #btnInstall{
+      background: #2563eb;
+      border-color: #1d4ed8;
+    }
 
-/* Botón primario (Obtener boleto) */
-#btnInstall{
-  background: #2563eb;        /* azul */
-  border-color: #1d4ed8;
-}
+    #btnPdf{
+      background: #0f172a;
+      border-color: #334155;
+    }
 
-/* Botón secundario (PDF) */
-#btnPdf{
-  background: #0f172a;
-  border-color: #334155;
-}
+    @media (max-width: 520px) {
+      /* En pantallas chicas, reducimos QR */
+      .col-qr { flex-basis: 170px; min-width: 170px; }
+      .qr { padding: 8px; border-radius: 12px; }
+      #passCard { padding: 14px; }
+      #passCard .value { font-size: 14px; }
+    }
 
-/* Si la pantalla es muy angosta, apilarlos */
-@media (max-width: 420px){
-  #actionsBar{
-    grid-template-columns: 1fr;
-  }
-}
-
+    @media (max-width: 420px){
+      /* Botones apilados en móvil angosto */
+      #actionsBar { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 
 <body>
 
   <div id="installBanner">
-    <div style="max-width:900px;margin:0 auto;padding:12px 18px;display:flex;gap:10px;align-items:center;">
-      <div style="flex:1">
+    <div style="max-width:980px;margin:0 auto;padding:12px 18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <div style="flex:1; min-width:220px;">
         <strong>📌 Obtener boleto</strong>
         <div class="muted">Agrega este boleto a tu pantalla principal.</div>
       </div>
@@ -167,9 +176,10 @@
       <a class="btn" href="index.html">Buscar otro</a>
     </div>
 
-    <div id="passCard" style="display:none;">
+    <!-- TICKET -->
+    <div id="passCard">
       <div class="row">
-        <div class="col">
+        <div class="col col-info">
           <div class="label">Estado</div>
           <div class="value" id="status"></div>
 
@@ -189,18 +199,19 @@
           <div class="value" id="hora"></div>
         </div>
 
-        <div class="col">
+        <div class="col col-qr">
           <div class="label">QR</div>
           <div class="qr">
             <div id="qrImg" style="width:100%; height:100%;"></div>
           </div>
-
-          <div id="actionsBar"  class="actions">
-            <button class="btn" id="btnInstall">Obtener boleto</button>
-            <button class="btn" id="btnPdf">Descargar PDF</button>
-          </div>
         </div>
       </div>
+    </div>
+
+    <!-- BOTONES (FUERA DEL TICKET) -->
+    <div id="actionsBar" class="actions">
+      <button class="btn" id="btnInstall">Obtener boleto</button>
+      <button class="btn" id="btnPdf">Descargar PDF</button>
     </div>
 
     <div id="errorBox" class="error"></div>
@@ -281,8 +292,8 @@
 
       new QRCode(container, {
         text: link,
-        width: 240,
-        height: 240,
+        width: 260,
+        height: 260,
         correctLevel: QRCode.CorrectLevel.M
       });
     }
@@ -331,7 +342,7 @@
           }
 
           if (isAndroid_()) {
-            alert('En Android:\nMenú ⋮ → "Agregar a pantalla principal"');
+            alert('En Android:\nMenú ⋮ → "Agregar a pantalla principal" o "Instalar app"');
             return;
           }
 
@@ -368,7 +379,7 @@
     async function downloadPdfFromPassCard_() {
       const btn = $("btnPdf");
       const card = $("passCard");
-      const actions = document.querySelector(".actions");
+      const actionsBar = $("actionsBar");
 
       try {
         clearError();
@@ -382,11 +393,10 @@
         if (!jsPDF) throw new Error("jsPDF no disponible (window.jspdf.jsPDF).");
         if (typeof html2canvas === "undefined") throw new Error("html2canvas no disponible.");
 
-        // Modo export: no botones, no wrap
-        card.classList.add("export-mode");
-        if (actions) actions.classList.add("pdf-hide");
+        // Ocultar botones (fuera del ticket) durante captura
+        if (actionsBar) actionsBar.classList.add("pdf-hide");
 
-        // Forzar colores para captura
+        // Forzar colores para captura (evita fondo blanco)
         const prevBg = card.style.backgroundColor;
         const prevColor = card.style.color;
         card.style.backgroundColor = "#111827";
@@ -398,19 +408,17 @@
         } finally {
           card.style.backgroundColor = prevBg;
           card.style.color = prevColor;
-          if (actions) actions.classList.remove("pdf-hide");
-          card.classList.remove("export-mode");
+          if (actionsBar) actionsBar.classList.remove("pdf-hide");
         }
 
         const imgData = canvas.toDataURL("image/png");
 
-        // ✅ PDF A4 pero ticket grande y centrado (sin verse "arriba con vacío")
+        // ✅ PDF A4, ticket grande y centrado (se ve bien en cualquier visor)
         const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
         const pageW = pdf.internal.pageSize.getWidth();
         const pageH = pdf.internal.pageSize.getHeight();
 
-        // Ocupa 85% del alto de la hoja, manteniendo proporción
         const targetH = pageH * 0.85;
         const targetW = (canvas.width / canvas.height) * targetH;
 
@@ -476,7 +484,11 @@
 
       const t = data.ticket;
 
-      $("passCard").style.display = "block";
+      // Mostrar ticket + acciones
+      const passCard = $("passCard");
+      const actionsBar = $("actionsBar");
+      if (passCard) passCard.style.display = "block";
+      if (actionsBar) actionsBar.style.display = "grid";
       if (subtitle) subtitle.textContent = "Pase cargado";
 
       setStatusBadge(t.status);
@@ -485,14 +497,11 @@
       $("nombreEvento").textContent = t.nombreEvento || "-";
       $("lugarDescripcion").textContent = t.lugarDescripcion || "-";
 
-      // Formato mejor para hora (si viene ISO)
-      const horaRaw = t.hora || "-";
-      let horaTxt = horaRaw;
-      // intenta parsear ISO
-      const d = new Date(horaRaw);
-      if (horaRaw !== "-" && !isNaN(d.getTime())) {
-        horaTxt = d.toLocaleString();
-      }
+      // Formato de hora (si viene en ISO)
+      const raw = t.hora || "-";
+      let horaTxt = raw;
+      const d = new Date(raw);
+      if (raw !== "-" && !isNaN(d.getTime())) horaTxt = d.toLocaleString();
       $("hora").textContent = horaTxt;
 
       const link = `${location.origin}${location.pathname}?token=${encodeURIComponent(token)}`;
