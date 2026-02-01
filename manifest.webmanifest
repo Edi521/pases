@@ -7,10 +7,7 @@
   "background_color": "#0b1220",
   "theme_color": "#111827",
   "icons": [
-    {
-        "src": "./icons/icon.png",
-        "sizes": "512x512",
-        "type": "image/jpg"
-    }
+    { "src": "/pases/icons/icon.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/pases/icons/icon.png", "sizes": "512x512", "type": "image/png" }
   ]
 }
