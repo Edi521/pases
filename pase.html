@@ -67,8 +67,8 @@
     }
 
     #passCard .col:last-child {
-      flex: 0 0 210px;
-      min-width: 210px;
+      flex: 0 0 190px;
+      min-width: 190px;
     }
 
     /* QR cuadrado responsivo */
@@ -76,7 +76,7 @@
       width: 100%;
       height: auto;
       aspect-ratio: 1 / 1;
-      max-width: 210px;
+      max-width: 190px;
       background:#fff;
       border-radius: 12px;
       display:flex;
@@ -102,6 +102,46 @@
       #passCard .value { font-size: 14px; }
       .qr { max-width: 150px; padding: 8px; }
     }
+
+    /* Barra de acciones abajo del ticket */
+#actionsBar{
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 2 botones mismo ancho */
+  gap: 10px;
+}
+
+/* Botones: mismo alto, centrados, sin “verse chiquitos” */
+#actionsBar .btn{
+  width: 100%;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Botón primario (Obtener boleto) */
+#btnInstall{
+  background: #2563eb;        /* azul */
+  border-color: #1d4ed8;
+}
+
+/* Botón secundario (PDF) */
+#btnPdf{
+  background: #0f172a;
+  border-color: #334155;
+}
+
+/* Si la pantalla es muy angosta, apilarlos */
+@media (max-width: 420px){
+  #actionsBar{
+    grid-template-columns: 1fr;
+  }
+}
+
   </style>
 </head>
 
@@ -155,7 +195,7 @@
             <div id="qrImg" style="width:100%; height:100%;"></div>
           </div>
 
-          <div class="actions" style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+          <div id="actionsBar"  class="actions">
             <button class="btn" id="btnInstall">Obtener boleto</button>
             <button class="btn" id="btnPdf">Descargar PDF</button>
           </div>
