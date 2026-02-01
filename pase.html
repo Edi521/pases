@@ -266,26 +266,49 @@
       const imgData = canvas.toDataURL("image/png");
 
       const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      
+      //Tamaño boleto en mm
+      const anchoTiket = 90;
+      const altoTiket = 55;
 
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      const imgW = pageW * 0.9;
-      const imgH = (canvas.height * imgW) / canvas.width;
-      const x = (pageW - imgW) / 2;
-      const y = (pageH - imgH) / 2;
+      //Margen interno
+      const margen = 4;
 
-      pdf.addImage(imgData, "PNG", x, y, imgW, imgH);
+      const pdf = new jsPDF({
+        orientation: "landscape", //horizontal
+        unit: "mm",
+        format: [anchoTiket, altoTiket]
+      });
 
-      const blob = pdf.output("blob");
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "pase.pdf";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    // Centrado exacto
+    const x = (TICKET_W - imgW) / 2;
+    const y = (TICKET_H - imgH) / 2;
+
+    // Área útil
+    const usableW = anchoTiket - margen * 2;
+    const usableH = altoTiket - margen * 2;
+
+    //Para hacer el escalado proporcional
+    const imgRatio = canvas.width / canvas.height;
+    let imgW = usableW;
+    let imgH = imgW / imgRatio;
+
+    if (imgH > usableH) {
+        imgH = usableH;
+        imgW = imgH * imgRatio;
+    }
+
+    pdf.addImage(imgData, "PNG", x, y, imgW, imgH);
+
+    const blob = pdf.output("blob");
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "pase.pdf"; //Nombre del archivo
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
 
     } catch (err) {
       console.error(err);
