@@ -102,80 +102,299 @@
 <!-- QR local (ligero, no bloquea) -->
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
 <script>
+  // ========= CONFIG =========
   const API_BASE_URL = "https://script.google.com/macros/s/AKfycbxb7tNEfgSrmGHAYDYR76rJw3eS9XJ2XG2JaDppxiS1ls0j_iQJck5599wGbkBlvxezZg/exec";
 
-  const $ = id => document.getElementById(id);
-
-  function showError(msg){ $("errorBox").style.display="block"; $("errorBox").textContent=msg; }
-  function clearError(){ $("errorBox").style.display="none"; }
-
-  function getToken(){ return new URL(location.href).searchParams.get("token"); }
-
-  function setStatusBadge(status){
-    const s = (status||"").toUpperCase();
-    let cls="badge", txt=s;
-    if(s==="ISSUED"){ cls+=" ok"; txt="VÁLIDO"; }
-    else if(s==="USED"){ cls+=" warn"; txt="YA USADO"; }
-    else cls+=" bad";
-    $("status").innerHTML=`<span class="${cls}">${txt}</span>`;
+  // Service Worker (para que Android considere instalable)
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./service-worker.js").catch(() => {});
   }
 
-  function setQr(link){
-    $("qrImg").innerHTML="";
-    new QRCode($("qrImg"), { text: link, width:200, height:200 });
+  // ========= helpers =========
+  const $ = (id) => document.getElementById(id);
+
+  function showError(msg) {
+    const box = $("errorBox");
+    if (!box) return;
+    box.style.display = "block";
+    box.textContent = msg;
   }
 
-  async function loadTicket(token){
-    clearError();
-    const res = await fetch(`${API_BASE_URL}?action=ticket&token=${encodeURIComponent(token)}`);
-    const data = await res.json();
-
-    if(!data.ok){ showError("Pase no encontrado"); return; }
-
-    const t = data.ticket;
-    $("subtitle").textContent="Pase cargado";
-    $("passCard").style.display="block";
-
-    setStatusBadge(t.status);
-    $("nombre").textContent=t.nombre||"-";
-    $("asiento").textContent=t.asiento||"-";
-    $("nombreEvento").textContent=t.nombreEvento||"-";
-    $("lugarDescripcion").textContent=t.lugarDescripcion||"-";
-    $("hora").textContent=t.hora||"-";
-
-    const link = `${location.origin}${location.pathname}?token=${encodeURIComponent(token)}`;
-    setQr(link);
-
-    $("btnPdf").onclick = downloadPdf;
+  function clearError() {
+    const box = $("errorBox");
+    if (!box) return;
+    box.style.display = "none";
+    box.textContent = "";
   }
 
-  async function loadScript(src){
-    return new Promise((res,rej)=>{
-      if(document.querySelector(`script[src="${src}"]`)) return res();
-      const s=document.createElement("script");
-      s.src=src; s.onload=res; s.onerror=rej;
+  function getTokenFromQuery() {
+    const url = new URL(location.href);
+    return (url.searchParams.get("token") || "").trim();
+  }
+
+  function isIOS_() {
+    const ua = navigator.userAgent || "";
+    return /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+  }
+
+  function isAndroid_() {
+    const ua = navigator.userAgent || "";
+    return /Android/i.test(ua);
+  }
+
+  function isStandalone_() {
+    return (window.navigator.standalone === true) ||
+           window.matchMedia("(display-mode: standalone)").matches;
+  }
+
+  function setStatusBadge(status) {
+    const el = $("status");
+    if (!el) return;
+
+    const s = (status || "").toUpperCase();
+
+    let cls = "badge";
+    let label = s || "DESCONOCIDO";
+
+    if (s === "ISSUED") { cls += " ok"; label = "VÁLIDO"; }
+    else if (s === "USED") { cls += " warn"; label = "YA USADO"; }
+    else if (s === "CANCELED" || s === "EXPIRED") { cls += " bad"; label = s; }
+    else { cls += " bad"; }
+
+    el.innerHTML = `<span class="${cls}">${label}</span>`;
+  }
+
+  function setQr(link) {
+    const container = $("qrImg");
+    if (!container) return;
+    container.innerHTML = "";
+
+    // Espera a que la lib esté lista (por defer)
+    if (typeof QRCode === "undefined") {
+      // retry suave
+      setTimeout(() => setQr(link), 50);
+      return;
+    }
+
+    new QRCode(container, {
+      text: link,
+      width: 200,
+      height: 200,
+      colorDark: "#000000",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  }
+
+  // ========= Install (Android prompt + fallbacks) =========
+  let deferredInstallPrompt = null;
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    // Importante: sin esto, Chrome muestra el prompt cuando quiere y tú no lo controlas
+    e.preventDefault();
+    deferredInstallPrompt = e;
+  });
+
+  window.addEventListener("appinstalled", () => {
+    deferredInstallPrompt = null;
+    hideInstallBanner_();
+  });
+
+  function showInstallBanner_() {
+    const banner = $("installBanner");
+    if (!banner) return;
+    if (isStandalone_()) return;
+    banner.style.display = "block";
+  }
+
+  function hideInstallBanner_() {
+    const banner = $("installBanner");
+    if (!banner) return;
+    banner.style.display = "none";
+  }
+
+  function wireInstallUI_() {
+    const btnInstall = $("btnInstall");
+    if (btnInstall) {
+      btnInstall.onclick = async () => {
+        // ANDROID (Chrome/Edge): abre el diálogo nativo si está disponible
+        if (deferredInstallPrompt) {
+          deferredInstallPrompt.prompt();
+          try { await deferredInstallPrompt.userChoice; } catch {}
+          deferredInstallPrompt = null;
+          hideInstallBanner_();
+          return;
+        }
+
+        // iOS: no se puede abrir prompt por código → instrucciones
+        if (isIOS_()) {
+          alert('En iPhone:\n1) Toca "Compartir" (cuadro con flecha)\n2) "Agregar a pantalla de inicio"');
+          return;
+        }
+
+        // Android sin prompt (webview/heurística)
+        if (isAndroid_()) {
+          alert('En Android:\n1) Menú ⋮ del navegador\n2) "Agregar a pantalla principal" o "Instalar app"');
+          return;
+        }
+
+        alert('Usa el menú del navegador para "Agregar a pantalla principal".');
+      };
+    }
+
+    // Si mantienes banner, cablearlo (opcional)
+    const close = $("installCloseBtn");
+    if (close) close.onclick = hideInstallBanner_;
+
+    const bannerInstallBtn = $("installBtn");
+    if (bannerInstallBtn) {
+      bannerInstallBtn.onclick = async () => {
+        // Reutiliza la misma lógica del botón principal
+        if (btnInstall) btnInstall.click();
+      };
+    }
+
+    // En iOS puedes mostrar el banner por defecto (si lo quieres)
+    if (isIOS_() && !isStandalone_()) {
+      showInstallBanner_();
+    }
+  }
+
+  // ========= PDF (lazy load + centrado) =========
+  function loadScriptOnce_(src) {
+    return new Promise((resolve, reject) => {
+      if (document.querySelector(`script[src="${src}"]`)) return resolve();
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error("Failed to load: " + src));
       document.head.appendChild(s);
     });
   }
 
-  async function downloadPdf(){
-    await loadScript("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
-    await loadScript("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
+  async function downloadPdfFromPassCard_() {
+    const card = $("passCard");
+    if (!card) {
+      alert("No se encontró el contenido del pase.");
+      return;
+    }
 
-    const canvas = await html2canvas($("passCard"), { scale:2 });
-    const img = canvas.toDataURL("image/png");
+    // Carga bajo demanda (no bloquea el render inicial)
+    await loadScriptOnce_("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
+    await loadScriptOnce_("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
 
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF();
-    pdf.addImage(img,"PNG",10,10,190,0);
-    pdf.save("pase.pdf");
+    // fondo blanco para captura
+    const prevBg = card.style.background;
+    const prevColor = card.style.color;
+    card.style.background = "#ffffff";
+    card.style.color = "#000000";
+
+    try {
+      const canvas = await html2canvas(card, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+
+      // Ancho con margen (10% total)
+      const imgW = pageW * 0.90;
+      const imgH = (canvas.height * imgW) / canvas.width;
+
+      const x = (pageW - imgW) / 2;
+      const y = (pageH - imgH) / 2;
+
+      pdf.addImage(imgData, "PNG", x, y, imgW, imgH);
+      pdf.save("pase.pdf");
+    } catch (err) {
+      console.error(err);
+      alert("No se pudo generar el PDF. Revisa consola.");
+    } finally {
+      card.style.background = prevBg;
+      card.style.color = prevColor;
+    }
   }
 
-  const token = getToken();
-  if(!token) showError("Falta token");
-  else loadTicket(token);
+  function wirePdfButton_() {
+    const btnPdf = $("btnPdf");
+    if (!btnPdf) return;
+    btnPdf.onclick = () => downloadPdfFromPassCard_();
+  }
+
+  // ========= Load ticket =========
+  async function loadTicket(token) {
+    clearError();
+
+    const subtitle = $("subtitle");
+    if (subtitle) subtitle.textContent = "Buscando pase…";
+
+    if (!API_BASE_URL.includes("/exec")) {
+      showError("Configura API_BASE_URL con tu URL de Apps Script /exec.");
+      if (subtitle) subtitle.textContent = "Error";
+      return;
+    }
+
+    let res;
+    try {
+      res = await fetch(`${API_BASE_URL}?action=ticket&token=${encodeURIComponent(token)}`, { method: "GET" });
+    } catch (e) {
+      showError("No se pudo conectar al servidor. Revisa tu internet.");
+      if (subtitle) subtitle.textContent = "Error";
+      return;
+    }
+
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      showError("Respuesta inválida del servidor (no es JSON).");
+      if (subtitle) subtitle.textContent = "Error";
+      return;
+    }
+
+    if (!data.ok) {
+      showError(`No se pudo cargar el pase: ${data.error || "ERROR"}`);
+      if (subtitle) subtitle.textContent = "No encontrado";
+      return;
+    }
+
+    const t = data.ticket;
+
+    const card = $("passCard");
+    if (card) card.style.display = "block";
+    if (subtitle) subtitle.textContent = "Pase cargado";
+
+    setStatusBadge(t.status);
+    if ($("nombre")) $("nombre").textContent = t.nombre || "-";
+    if ($("asiento")) $("asiento").textContent = t.asiento || "-";
+    if ($("nombreEvento")) $("nombreEvento").textContent = t.nombreEvento || "-";
+    if ($("lugarDescripcion")) $("lugarDescripcion").textContent = t.lugarDescripcion || "-";
+    if ($("hora")) $("hora").textContent = (t.hora && String(t.hora).trim().length > 0) ? t.hora : "-";
+
+    // El QR apunta al detalle del pase
+    const passLink = `${location.origin}${location.pathname}?token=${encodeURIComponent(token)}`;
+    setQr(passLink);
+  }
+
+  // ========= init =========
+  wireInstallUI_();
+  wirePdfButton_();
+
+  const token = getTokenFromQuery();
+  if (!token) {
+    const subtitle = $("subtitle");
+    if (subtitle) subtitle.textContent = "Falta token";
+    showError("No se proporcionó token. Regresa a 'Buscar pase' y pega tu token.");
+  } else {
+    loadTicket(token);
+  }
 </script>
+
 
 </body>
 </html>
