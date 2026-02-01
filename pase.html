@@ -106,12 +106,15 @@
   // ========= CONFIG =========
   const API_BASE_URL = "https://script.google.com/macros/s/AKfycbxb7tNEfgSrmGHAYDYR76rJw3eS9XJ2XG2JaDppxiS1ls0j_iQJck5599wGbkBlvxezZg/exec";
 
-  // Service Worker (para que Android considere instalable)
+  // ========= Service Worker =========
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("../servicio-worker.js").catch(() => {});
+    navigator.serviceWorker.register("./service-worker.js").catch((e) => {
+      // No bloquea el resto; solo informativo
+      console.warn("SW no registrado:", e);
+    });
   }
 
-  // ========= helpers =========
+  // ========= Helpers =========
   const $ = (id) => document.getElementById(id);
 
   function showError(msg) {
@@ -126,6 +129,11 @@
     if (!box) return;
     box.style.display = "none";
     box.textContent = "";
+  }
+
+  function logToBox_(msg) {
+    // Útil para depurar PDF en desktop/móvil sin consola
+    showError(msg);
   }
 
   function getTokenFromQuery() {
@@ -145,7 +153,7 @@
 
   function isStandalone_() {
     return (window.navigator.standalone === true) ||
-           window.matchMedia("(display-mode: standalone)").matches;
+      window.matchMedia("(display-mode: standalone)").matches;
   }
 
   function setStatusBadge(status) {
@@ -153,7 +161,6 @@
     if (!el) return;
 
     const s = (status || "").toUpperCase();
-
     let cls = "badge";
     let label = s || "DESCONOCIDO";
 
@@ -170,9 +177,8 @@
     if (!container) return;
     container.innerHTML = "";
 
-    // Espera a que la lib esté lista (por defer)
     if (typeof QRCode === "undefined") {
-      // retry suave
+      // QRCode.js está defer: esperamos un poco
       setTimeout(() => setQr(link), 50);
       return;
     }
@@ -187,11 +193,10 @@
     });
   }
 
-  // ========= Install (Android prompt + fallbacks) =========
+  // ========= Install PWA =========
   let deferredInstallPrompt = null;
 
   window.addEventListener("beforeinstallprompt", (e) => {
-    // Importante: sin esto, Chrome muestra el prompt cuando quiere y tú no lo controlas
     e.preventDefault();
     deferredInstallPrompt = e;
   });
@@ -218,22 +223,22 @@
     const btnInstall = $("btnInstall");
     if (btnInstall) {
       btnInstall.onclick = async () => {
-        // ANDROID (Chrome/Edge): abre el diálogo nativo si está disponible
+        // Android (Chrome/Edge): prompt nativo si está disponible
         if (deferredInstallPrompt) {
           deferredInstallPrompt.prompt();
-          try { await deferredInstallPrompt.userChoice; } catch {}
+          try { await deferredInstallPrompt.userChoice; } catch { }
           deferredInstallPrompt = null;
           hideInstallBanner_();
           return;
         }
 
-        // iOS: no se puede abrir prompt por código → instrucciones
+        // iOS: instrucciones
         if (isIOS_()) {
           alert('En iPhone:\n1) Toca "Compartir" (cuadro con flecha)\n2) "Agregar a pantalla de inicio"');
           return;
         }
 
-        // Android sin prompt (webview/heurística)
+        // Android sin prompt (webview/heurísticas)
         if (isAndroid_()) {
           alert('En Android:\n1) Menú ⋮ del navegador\n2) "Agregar a pantalla principal" o "Instalar app"');
           return;
@@ -243,98 +248,127 @@
       };
     }
 
-    // Si mantienes banner, cablearlo (opcional)
     const close = $("installCloseBtn");
     if (close) close.onclick = hideInstallBanner_;
 
     const bannerInstallBtn = $("installBtn");
     if (bannerInstallBtn) {
-      bannerInstallBtn.onclick = async () => {
-        // Reutiliza la misma lógica del botón principal
+      bannerInstallBtn.onclick = () => {
         if (btnInstall) btnInstall.click();
       };
     }
 
-    // En iOS puedes mostrar el banner por defecto (si lo quieres)
-    if (isIOS_() && !isStandalone_()) {
-      showInstallBanner_();
-    }
+    // iOS: si quieres banner siempre visible
+    if (isIOS_() && !isStandalone_()) showInstallBanner_();
   }
 
-  // ========= PDF (lazy load + centrado) =========
+  // ========= PDF =========
   function loadScriptOnce_(src) {
     return new Promise((resolve, reject) => {
-      if (document.querySelector(`script[src="${src}"]`)) return resolve();
+      const existing = document.querySelector(`script[src="${src}"]`);
+      if (existing) {
+        if (existing.dataset.loaded === "1") return resolve();
+        existing.addEventListener("load", () => resolve(), { once: true });
+        existing.addEventListener("error", () => reject(new Error("No se pudo cargar: " + src)), { once: true });
+        return;
+      }
+
       const s = document.createElement("script");
       s.src = src;
-      s.onload = resolve;
-      s.onerror = () => reject(new Error("Failed to load: " + src));
+      s.async = true;
+      s.dataset.loaded = "0";
+      s.onload = () => { s.dataset.loaded = "1"; resolve(); };
+      s.onerror = () => reject(new Error("No se pudo cargar: " + src));
       document.head.appendChild(s);
     });
   }
 
-async function downloadPdfFromPassCard_() {
-  const card = document.getElementById("passCard");
-  if (!card) {
-    showError("No se encontró #passCard.");
-    return;
+  async function downloadPdfFromPassCard_() {
+    const btn = $("btnPdf");
+    try {
+      clearError();
+      if (btn) { btn.disabled = true; btn.textContent = "Generando…"; }
+
+      logToBox_("PDF: iniciando…");
+
+      const card = $("passCard");
+      if (!card) throw new Error("No se encontró #passCard.");
+
+      // Cargar libs bajo demanda
+      await loadScriptOnce_("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
+      if (!window.jspdf || !window.jspdf.jsPDF) throw new Error("jsPDF no quedó disponible (window.jspdf.jsPDF).");
+      logToBox_("PDF: jsPDF OK");
+
+      await loadScriptOnce_("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
+      if (typeof html2canvas === "undefined") throw new Error("html2canvas no quedó disponible.");
+      logToBox_("PDF: html2canvas OK");
+
+      // Forzar fondo oscuro SOLO para captura
+      const prevBg = card.style.backgroundColor;
+      const prevColor = card.style.color;
+      card.style.backgroundColor = "#111827";
+      card.style.color = "#e5e7eb";
+
+      let canvas;
+      try {
+        canvas = await html2canvas(card, { scale: 2, backgroundColor: "#111827" });
+      } finally {
+        card.style.backgroundColor = prevBg;
+        card.style.color = prevColor;
+      }
+
+      const imgData = canvas.toDataURL("image/png");
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+
+      const imgW = pageW * 0.90;
+      const imgH = (canvas.height * imgW) / canvas.width;
+
+      const x = (pageW - imgW) / 2;
+      const y = (pageH - imgH) / 2;
+
+      pdf.addImage(imgData, "PNG", x, y, imgW, imgH);
+
+      // Descarga robusta con blob
+      const blob = pdf.output("blob");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "pase.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+      logToBox_("PDF: descarga disparada ✅");
+
+      // Si no quieres mostrar el log cuando funciona, puedes limpiar:
+      // clearError();
+
+    } catch (err) {
+      console.error(err);
+      showError("PDF ERROR: " + (err?.message || String(err)));
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = "Descargar PDF"; }
+    }
   }
-
-  // Cargar libs solo al descargar (si no existen)
-  await loadScriptOnce_("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
-  await loadScriptOnce_("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
-
-  // Guarda estilos inline actuales
-  const prevBg = card.style.backgroundColor;
-  const prevColor = card.style.color;
-
-  // Fuerza el tema oscuro (igual que tu UI)
-  card.style.backgroundColor = "#111827";
-  card.style.color = "#e5e7eb";
-
-  try {
-    const canvas = await html2canvas(card, {
-      scale: 2,
-      backgroundColor: "#111827"
-    });
-
-    const imgData = canvas.toDataURL("image/png");
-
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-
-    const imgW = pageW * 0.90;
-    const imgH = (canvas.height * imgW) / canvas.width;
-
-    const x = (pageW - imgW) / 2;
-    const y = (pageH - imgH) / 2;
-
-    pdf.addImage(imgData, "PNG", x, y, imgW, imgH);
-    pdf.save("pase.pdf");
-  } catch (err) {
-    console.error(err);
-    showError("No se pudo generar el PDF.");
-  } finally {
-    // Restaura
-    card.style.backgroundColor = prevBg;
-    card.style.color = prevColor;
-  }
-}
-
 
   function wirePdfButton_() {
     const btnPdf = $("btnPdf");
-    if (!btnPdf) return;
+    if (!btnPdf) {
+      showError("No existe el botón #btnPdf.");
+      return;
+    }
     btnPdf.onclick = () => downloadPdfFromPassCard_();
   }
 
-  // ========= Load ticket =========
+  // ========= Load Ticket =========
   async function loadTicket(token) {
     clearError();
-
     const subtitle = $("subtitle");
     if (subtitle) subtitle.textContent = "Buscando pase…";
 
@@ -381,12 +415,11 @@ async function downloadPdfFromPassCard_() {
     if ($("lugarDescripcion")) $("lugarDescripcion").textContent = t.lugarDescripcion || "-";
     if ($("hora")) $("hora").textContent = (t.hora && String(t.hora).trim().length > 0) ? t.hora : "-";
 
-    // El QR apunta al detalle del pase
     const passLink = `${location.origin}${location.pathname}?token=${encodeURIComponent(token)}`;
     setQr(passLink);
   }
 
-  // ========= init =========
+  // ========= INIT =========
   wireInstallUI_();
   wirePdfButton_();
 
@@ -399,6 +432,7 @@ async function downloadPdfFromPassCard_() {
     loadTicket(token);
   }
 </script>
+
 
 
 </body>
