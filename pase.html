@@ -225,102 +225,100 @@
     });
   }
 
-  async function downloadPdfFromPassCard_() {
-    const btn = $("btnPdf");
-    const card = $("passCard");
-    const actions = document.querySelector(".actions");
+async function downloadPdfFromPassCard_() {
+  const btn = document.getElementById("btnPdf");
+  const card = document.getElementById("passCard");
+  const actions = document.querySelector(".actions");
 
-    if (!card) {
-      showError("No se encontró el pase.");
-      return;
+  try {
+    clearError();
+    if (btn) { btn.disabled = true; btn.textContent = "Generando…"; }
+
+    if (!card) throw new Error("No se encontró #passCard.");
+
+    // Cargar librerías bajo demanda
+    await loadScriptOnce_("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
+    await loadScriptOnce_("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
+
+    if (!window.jspdf || !window.jspdf.jsPDF) throw new Error("jsPDF no disponible (window.jspdf.jsPDF).");
+    if (typeof html2canvas === "undefined") throw new Error("html2canvas no disponible.");
+
+    // Ocultar botones para el PDF
+    if (actions) actions.classList.add("pdf-hide");
+
+    // Forzar colores para captura (evita fondo blanco)
+    const prevBg = card.style.backgroundColor;
+    const prevColor = card.style.color;
+    card.style.backgroundColor = "#111827";
+    card.style.color = "#e5e7eb";
+
+    let canvas;
+    try {
+      canvas = await html2canvas(card, { scale: 2, backgroundColor: "#111827" });
+    } finally {
+      // Restaurar UI
+      card.style.backgroundColor = prevBg;
+      card.style.color = prevColor;
+      if (actions) actions.classList.remove("pdf-hide");
     }
 
-    try {
-      clearError();
-      if (btn) { btn.disabled = true; btn.textContent = "Generando…"; }
-
-      await loadScriptOnce_("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
-      await loadScriptOnce_("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
-
-      // 🔹 OCULTAR BOTONES SOLO PARA EL PDF
-      if (actions) actions.classList.add("pdf-hide");
-
-      // Fondo oscuro consistente
-      const prevBg = card.style.backgroundColor;
-      const prevColor = card.style.color;
-      card.style.backgroundColor = "#111827";
-      card.style.color = "#e5e7eb";
-
-      let canvas;
-      try {
-        canvas = await html2canvas(card, {
-          scale: 2,
-          backgroundColor: "#111827"
-        });
-      } finally {
-        card.style.backgroundColor = prevBg;
-        card.style.color = prevColor;
-        if (actions) actions.classList.remove("pdf-hide"); // 🔹 RESTAURAR
-      }
-
-      const imgData = canvas.toDataURL("image/png");
+    // Convertir a imagen
+    const imgData = canvas.toDataURL("image/png");
 
     const { jsPDF } = window.jspdf;
 
-// Tamaño boleto en mm
-const anchoTiket = 90;
-const altoTiket = 55;
+    // 🎟️ Tamaño ticket (mm)
+    const anchoTiket = 90;
+    const altoTiket = 55;
+    const margen = 4;
 
-// Margen interno
-const margen = 4;
+    // ✅ MÁS ESTABLE: NO usar orientation; el tamaño ancho>alto ya es "landscape"
+    const pdf = new jsPDF({
+      unit: "mm",
+      format: [anchoTiket, altoTiket]
+    });
 
-const pdf = new jsPDF({
-  orientation: "landscape",
-  unit: "mm",
-  format: [anchoTiket, altoTiket]
-});
+    // Área útil con márgenes
+    const usableW = anchoTiket - margen * 2;
+    const usableH = altoTiket - margen * 2;
 
-// Área útil (restando márgenes)
-const usableW = anchoTiket - margen * 2;
-const usableH = altoTiket - margen * 2;
+    // Escalado proporcional
+    const imgRatio = canvas.width / canvas.height;
 
-// Escalado proporcional (mantener proporción de la imagen)
-const imgRatio = canvas.width / canvas.height;
+    let imgW = usableW;
+    let imgH = imgW / imgRatio;
 
-let imgW = usableW;
-let imgH = imgW / imgRatio;
+    if (imgH > usableH) {
+      imgH = usableH;
+      imgW = imgH * imgRatio;
+    }
 
-// Si se pasa en altura, ajustamos por altura
-if (imgH > usableH) {
-  imgH = usableH;
-  imgW = imgH * imgRatio;
+    // Centrado exacto
+    const x = (anchoTiket - imgW) / 2;
+    const y = (altoTiket - imgH) / 2;
+
+    // Meter imagen
+    pdf.addImage(imgData, "PNG", x, y, imgW, imgH);
+
+    // Descargar (Blob + link) — más confiable que pdf.save()
+    const blob = pdf.output("blob");
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "pase.pdf";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+
+  } catch (err) {
+    console.error(err);
+    showError("PDF ERROR: " + (err?.message || String(err)));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Descargar PDF"; }
+  }
 }
 
-// Centrado exacto (ya con imgW/imgH calculados)
-const x = (anchoTiket - imgW) / 2;
-const y = (altoTiket - imgH) / 2;
-
-pdf.addImage(imgData, "PNG", x, y, imgW, imgH);
-
-// Descargar (Blob)
-const blob = pdf.output("blob");
-const url = URL.createObjectURL(blob);
-const a = document.createElement("a");
-a.href = url;
-a.download = "pase.pdf";
-document.body.appendChild(a);
-a.click();
-a.remove();
-setTimeout(() => URL.revokeObjectURL(url), 1500);
-
-
-    } catch (err) {
-      console.error(err);
-      showError("No se pudo generar el PDF.");
-    } finally {
-      if (btn) { btn.disabled = false; btn.textContent = "Descargar PDF"; }
-    }
-  }
 
   function wirePdfButton_() {
     const btnPdf = $("btnPdf");
