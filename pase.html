@@ -276,46 +276,45 @@
   }
 
   async function downloadPdfFromPassCard_() {
-    const card = $("passCard");
-    if (!card) {
-      alert("No se encontró el contenido del pase.");
-      return;
+    const card = document.getElementById("passCard");
+
+// Guarda estilos inline actuales
+const prevBg = card.style.backgroundColor;
+const prevColor = card.style.color;
+
+// Fuerza el tema oscuro (igual que tu UI)
+card.style.backgroundColor = "#111827";
+card.style.color = "#e5e7eb";
+
+try {
+  const canvas = await html2canvas(card, {
+    scale: 2,
+    backgroundColor: "#111827" // IMPORTANTÍSIMO: fondo del canvas
+  });
+
+  const imgData = canvas.toDataURL("image/png");
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+
+  const imgW = pageW * 0.90;
+  const imgH = (canvas.height * imgW) / canvas.width;
+
+  const x = (pageW - imgW) / 2;
+  const y = (pageH - imgH) / 2;
+
+  pdf.addImage(imgData, "PNG", x, y, imgW, imgH);
+  pdf.save("pase.pdf");
+} finally {
+  // Restaura
+  card.style.backgroundColor = prevBg;
+  card.style.color = prevColor;
+}
+
     }
-
-    // Carga bajo demanda (no bloquea el render inicial)
-    await loadScriptOnce_("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
-    await loadScriptOnce_("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
-
-    try {
-      const canvas = await html2canvas(card, {
-        scale: 2,
-        backgroundColor: null
-      });
-      const imgData = canvas.toDataURL("image/png");
-
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-
-      // Ancho con margen (10% total)
-      const imgW = pageW * 0.90;
-      const imgH = (canvas.height * imgW) / canvas.width;
-
-      const x = (pageW - imgW) / 2;
-      const y = (pageH - imgH) / 2;
-
-      pdf.addImage(imgData, "PNG", x, y, imgW, imgH);
-      pdf.save("pase.pdf");
-    } catch (err) {
-      console.error(err);
-      alert("No se pudo generar el PDF. Revisa consola.");
-    } finally {
-      card.style.background = prevBg;
-      card.style.color = prevColor;
-    }
-  }
 
   function wirePdfButton_() {
     const btnPdf = $("btnPdf");
