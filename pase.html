@@ -13,8 +13,7 @@
 
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:0; background:#0b1220; color:#e5e7eb; }
-    .wrap { max-width: 720px; margin: 0 auto; padding: 18px; }
-    .card { background:#111827; border:1px solid #1f2937; border-radius: 14px; padding: 16px; }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 18px; }
     .row { display:flex; gap: 12px; flex-wrap: wrap; }
     .col { flex: 1; min-width: 220px; }
     h1 { font-size: 20px; margin: 0 0 8px; }
@@ -25,342 +24,453 @@
     .ok { background:#052e1a; border-color:#14532d; }
     .warn { background:#2a1d05; border-color:#78350f; }
     .bad { background:#2a0a0a; border-color:#7f1d1d; }
-    .btn { padding: 10px 12px; border-radius: 10px; border:1px solid #334155; background:#0f172a; color:#e5e7eb; cursor:pointer; }
+    .btn { padding: 10px 12px; border-radius: 10px; border:1px solid #334155; background:#0f172a; color:#e5e7eb; cursor:pointer; text-decoration:none; display:inline-block; }
     .btn:active { transform: translateY(1px); }
-    .qr { width: 220px; height: 220px; background:#fff; border-radius: 12px; display:flex; align-items:center; justify-content:center; }
-    .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; }
-    .error { background:#2a0a0a; border:1px solid #7f1d1d; border-radius:12px; padding:12px; display:none; margin-top:12px; }
+    .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; gap: 10px; }
+    .error { background:#2a0a0a; border:1px solid #7f1d1d; border-radius:12px; padding:12px; display:none; margin-top:12px; white-space: pre-wrap; }
 
+    /* Banner instalación */
     #installBanner { display:none; position:sticky; top:0; z-index:9999; background:#0f172a; border-bottom:1px solid #334155; }
 
-    @media print {
-      body { background:#fff; color:#000; }
-      .topbar, #installBanner, .actions, .muted { display:none !important; }
-    }
-
+    /* Ocultar cosas solo al exportar PDF */
     .pdf-hide { display:none !important; }
+
+    /* Modo exportación para que NO se rompa el layout al capturar */
     .export-mode .actions { display:none !important; }
     .export-mode .row { flex-wrap: nowrap !important; }
     .export-mode .col { min-width: 0 !important; }
 
+    /* ====== TICKET LAYOUT CONSISTENTE ====== */
+    #passCard {
+      width: min(520px, 92vw);
+      aspect-ratio: 90 / 55;
+      height: auto;
+      overflow: hidden;
 
+      background:#111827;
+      border:1px solid #1f2937;
+      border-radius: 14px;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+
+    /* 2 columnas: datos + QR (no se rompe) */
+    #passCard .row {
+      height: 100%;
+      flex-wrap: nowrap;
+      align-items: stretch;
+    }
+
+    #passCard .col:first-child {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    #passCard .col:last-child {
+      flex: 0 0 210px;
+      min-width: 210px;
+    }
+
+    /* QR cuadrado responsivo */
+    .qr {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1 / 1;
+      max-width: 210px;
+      background:#fff;
+      border-radius: 12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    #qrImg img, #qrImg canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display:block;
+    }
+
+    /* Ajustes tipográficos dentro del ticket */
+    #passCard .label { margin-top: 8px; }
+    #passCard .value { font-size: 15px; }
+
+    @media (max-width: 420px) {
+      #passCard { width: 96vw; padding: 14px; }
+      #passCard .col:last-child { flex-basis: 150px; min-width: 150px; }
+      #passCard .value { font-size: 14px; }
+      .qr { max-width: 150px; padding: 8px; }
+    }
   </style>
 </head>
 
 <body>
 
-<div id="installBanner">
-  <div style="max-width:720px;margin:0 auto;padding:12px 18px;display:flex;gap:10px;">
-    <div style="flex:1">
-      <strong>📌 Obtener boleto</strong>
-      <div class="muted">Agrega este boleto a tu pantalla principal.</div>
-    </div>
-    <button id="installBtn" class="btn">Agregar</button>
-    <button id="installCloseBtn" class="btn">Cerrar</button>
-  </div>
-</div>
-
-<div class="wrap">
-  <div class="topbar">
-    <div>
-      <h1>🎟️ Mi pase</h1>
-      <div class="muted" id="subtitle">Cargando…</div>
-    </div>
-    <a class="btn" href="index.html">Buscar otro</a>
-  </div>
-
-  <div id="passCard" class="card" style="display:none;">
-    <div class="row">
-      <div class="col">
-        <div class="label">Estado</div>
-        <div class="value" id="status"></div>
-
-        <div class="label">Nombre</div>
-        <div class="value" id="nombre"></div>
-
-        <div class="label">Asiento</div>
-        <div class="value" id="asiento"></div>
-
-        <div class="label">Evento</div>
-        <div class="value" id="nombreEvento"></div>
-
-        <div class="label">Lugar</div>
-        <div class="value" id="lugarDescripcion"></div>
-
-        <div class="label">Hora</div>
-        <div class="value" id="hora"></div>
+  <div id="installBanner">
+    <div style="max-width:900px;margin:0 auto;padding:12px 18px;display:flex;gap:10px;align-items:center;">
+      <div style="flex:1">
+        <strong>📌 Obtener boleto</strong>
+        <div class="muted">Agrega este boleto a tu pantalla principal.</div>
       </div>
+      <button id="installBtn" class="btn">Agregar</button>
+      <button id="installCloseBtn" class="btn" style="opacity:.85;">Cerrar</button>
+    </div>
+  </div>
 
-      <div class="col">
-        <div class="label">QR</div>
-        <div class="qr"><div id="qrImg"></div></div>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>🎟️ Mi pase</h1>
+        <div class="muted" id="subtitle">Cargando…</div>
+      </div>
+      <a class="btn" href="index.html">Buscar otro</a>
+    </div>
 
-        <div id="actionsBar" class="actions" style="margin-top:10px;display:flex;gap:10px;">
-          <button class="btn" id="btnInstall">Obtener boleto</button>
-          <button class="btn" id="btnPdf">Descargar PDF</button>
+    <div id="passCard" style="display:none;">
+      <div class="row">
+        <div class="col">
+          <div class="label">Estado</div>
+          <div class="value" id="status"></div>
+
+          <div class="label">Nombre</div>
+          <div class="value" id="nombre"></div>
+
+          <div class="label">Asiento</div>
+          <div class="value" id="asiento"></div>
+
+          <div class="label">Evento</div>
+          <div class="value" id="nombreEvento"></div>
+
+          <div class="label">Lugar</div>
+          <div class="value" id="lugarDescripcion"></div>
+
+          <div class="label">Hora</div>
+          <div class="value" id="hora"></div>
+        </div>
+
+        <div class="col">
+          <div class="label">QR</div>
+          <div class="qr">
+            <div id="qrImg" style="width:100%; height:100%;"></div>
+          </div>
+
+          <div class="actions" style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn" id="btnInstall">Obtener boleto</button>
+            <button class="btn" id="btnPdf">Descargar PDF</button>
+          </div>
         </div>
       </div>
     </div>
+
+    <div id="errorBox" class="error"></div>
   </div>
 
-  <div id="errorBox" class="error"></div>
-</div>
+  <!-- QR local -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-<!-- QR local (ligero, no bloquea) -->
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    // ========= CONFIG =========
+    const API_BASE_URL = "https://script.google.com/macros/s/AKfycbxb7tNEfgSrmGHAYDYR76rJw3eS9XJ2XG2JaDppxiS1ls0j_iQJck5599wGbkBlvxezZg/exec";
 
-<script>
-  // ========= CONFIG =========
-  const API_BASE_URL = "https://script.google.com/macros/s/AKfycbxb7tNEfgSrmGHAYDYR76rJw3eS9XJ2XG2JaDppxiS1ls0j_iQJck5599wGbkBlvxezZg/exec";
-
-  // ========= Service Worker =========
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./service-worker.js").catch(() => {});
-  }
-
-  // ========= Helpers =========
-  const $ = (id) => document.getElementById(id);
-
-  function showError(msg) {
-    const box = $("errorBox");
-    if (!box) return;
-    box.style.display = "block";
-    box.textContent = msg;
-  }
-
-  function clearError() {
-    const box = $("errorBox");
-    if (!box) return;
-    box.style.display = "none";
-    box.textContent = "";
-  }
-
-  function getTokenFromQuery() {
-    return (new URL(location.href).searchParams.get("token") || "").trim();
-  }
-
-  function isIOS_() {
-    return /iPad|iPhone|iPod/.test(navigator.userAgent || "");
-  }
-
-  function isAndroid_() {
-    return /Android/i.test(navigator.userAgent || "");
-  }
-
-  function isStandalone_() {
-    return window.navigator.standalone === true ||
-      window.matchMedia("(display-mode: standalone)").matches;
-  }
-
-  function setStatusBadge(status) {
-    const el = $("status");
-    if (!el) return;
-
-    const s = (status || "").toUpperCase();
-    let cls = "badge";
-    let label = s;
-
-    if (s === "ISSUED") { cls += " ok"; label = "VÁLIDO"; }
-    else if (s === "USED") { cls += " warn"; label = "YA USADO"; }
-    else { cls += " bad"; }
-
-    el.innerHTML = `<span class="${cls}">${label}</span>`;
-  }
-
-  function setQr(link) {
-    const container = $("qrImg");
-    if (!container) return;
-    container.innerHTML = "";
-
-    if (typeof QRCode === "undefined") {
-      setTimeout(() => setQr(link), 50);
-      return;
+    // ========= Service Worker =========
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./service-worker.js").catch(() => {});
     }
 
-    new QRCode(container, {
-      text: link,
-      width: 200,
-      height: 200,
-      correctLevel: QRCode.CorrectLevel.M
+    // ========= Helpers =========
+    const $ = (id) => document.getElementById(id);
+
+    function showError(msg) {
+      const box = $("errorBox");
+      if (!box) return;
+      box.style.display = "block";
+      box.textContent = msg;
+    }
+
+    function clearError() {
+      const box = $("errorBox");
+      if (!box) return;
+      box.style.display = "none";
+      box.textContent = "";
+    }
+
+    function getTokenFromQuery() {
+      return (new URL(location.href).searchParams.get("token") || "").trim();
+    }
+
+    function isIOS_() {
+      const ua = navigator.userAgent || "";
+      return /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+    }
+
+    function isAndroid_() {
+      return /Android/i.test(navigator.userAgent || "");
+    }
+
+    function isStandalone_() {
+      return (window.navigator.standalone === true) ||
+        window.matchMedia("(display-mode: standalone)").matches;
+    }
+
+    function setStatusBadge(status) {
+      const el = $("status");
+      if (!el) return;
+
+      const s = (status || "").toUpperCase();
+      let cls = "badge";
+      let label = s || "DESCONOCIDO";
+
+      if (s === "ISSUED") { cls += " ok"; label = "VÁLIDO"; }
+      else if (s === "USED") { cls += " warn"; label = "YA USADO"; }
+      else if (s === "CANCELED" || s === "EXPIRED") { cls += " bad"; label = s; }
+      else { cls += " bad"; }
+
+      el.innerHTML = `<span class="${cls}">${label}</span>`;
+    }
+
+    function setQr(link) {
+      const container = $("qrImg");
+      if (!container) return;
+      container.innerHTML = "";
+
+      if (typeof QRCode === "undefined") {
+        setTimeout(() => setQr(link), 50);
+        return;
+      }
+
+      new QRCode(container, {
+        text: link,
+        width: 240,
+        height: 240,
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    // ========= Install PWA =========
+    let deferredInstallPrompt = null;
+
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
     });
-  }
 
-  // ========= Install PWA =========
-  let deferredInstallPrompt = null;
-
-  window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault();
-    deferredInstallPrompt = e;
-  });
-
-  function wireInstallUI_() {
-    const btnInstall = $("btnInstall");
-    if (!btnInstall) return;
-
-    btnInstall.onclick = async () => {
-      if (deferredInstallPrompt) {
-        deferredInstallPrompt.prompt();
-        try { await deferredInstallPrompt.userChoice; } catch {}
-        deferredInstallPrompt = null;
-        return;
-      }
-
-      if (isIOS_()) {
-        alert('En iPhone:\n1) Compartir\n2) Agregar a pantalla de inicio');
-        return;
-      }
-
-      if (isAndroid_()) {
-        alert('Menú ⋮ → Agregar a pantalla principal');
-        return;
-      }
-    };
-  }
-
-  // ========= PDF =========
-  function loadScriptOnce_(src) {
-    return new Promise((resolve, reject) => {
-      if (document.querySelector(`script[src="${src}"]`)) return resolve();
-      const s = document.createElement("script");
-      s.src = src;
-      s.onload = resolve;
-      s.onerror = () => reject(new Error("No se pudo cargar " + src));
-      document.head.appendChild(s);
+    window.addEventListener("appinstalled", () => {
+      deferredInstallPrompt = null;
+      hideInstallBanner_();
     });
-  }
 
-async function downloadPdfFromPassCard_() {
-  const btn = document.getElementById("btnPdf");
-  const card = document.getElementById("passCard");
-  const actions = document.querySelector(".actions");
-
-  try {
-    clearError();
-    if (btn) { btn.disabled = true; btn.textContent = "Generando…"; }
-    if (!card) throw new Error("No se encontró #passCard.");
-
-    // Cargar libs bajo demanda
-    await loadScriptOnce_("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
-    await loadScriptOnce_("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
-
-    const jsPDF = window.jspdf && window.jspdf.jsPDF;
-    if (!jsPDF) throw new Error("jsPDF no disponible (window.jspdf.jsPDF).");
-    if (typeof html2canvas === "undefined") throw new Error("html2canvas no disponible.");
-
-    // ---- MODO EXPORTACIÓN (evita que el QR se vaya fuera) ----
-    card.classList.add("export-mode");
-    if (actions) actions.classList.add("pdf-hide");
-
-    // Forzar colores para captura (evita fondo blanco)
-    const prevBg = card.style.backgroundColor;
-    const prevColor = card.style.color;
-    card.style.backgroundColor = "#111827";
-    card.style.color = "#e5e7eb";
-
-    let canvas;
-    try {
-      canvas = await html2canvas(card, { scale: 2, backgroundColor: "#111827" });
-    } finally {
-      // Restaurar UI
-      card.style.backgroundColor = prevBg;
-      card.style.color = prevColor;
-      if (actions) actions.classList.remove("pdf-hide");
-      card.classList.remove("export-mode");
+    function showInstallBanner_() {
+      const banner = $("installBanner");
+      if (!banner) return;
+      if (isStandalone_()) return;
+      banner.style.display = "block";
     }
 
-    const imgData = canvas.toDataURL("image/png");
-
-    // 🎟️ Ticket: ancho fijo, alto proporcional a la captura
-    const MARGIN = 3;      // mm
-    const TICKET_W = 90;   // mm
-    const ratio = canvas.height / canvas.width;
-    const TICKET_H = TICKET_W * ratio;
-
-    const pageW = TICKET_W + MARGIN * 2;
-    const pageH = TICKET_H + MARGIN * 2;
-
-    // ✅ Forma más confiable para custom size
-    const pdf = new jsPDF("l", "mm", [pageW, pageH]); // "l" landscape
-    // Si lo quieres vertical, usa: new jsPDF("p","mm",[pageW,pageH])
-
-    // DEBUG: muestra tamaño real de página (para confirmar que NO es A4)
-    const realW = pdf.internal.pageSize.getWidth();
-    const realH = pdf.internal.pageSize.getHeight();
-    // Si aquí te sale ~297x210, SIGUE siendo A4 y no está tomando el size.
-    // Lo mostramos en pantalla:
-    showError(`PDF page size (mm): ${realW.toFixed(1)} x ${realH.toFixed(1)}\n(Debería ser ~${pageW.toFixed(1)} x ${pageH.toFixed(1)})`);
-
-    // Dibuja la imagen ocupando el área útil
-    pdf.addImage(imgData, "PNG", MARGIN, MARGIN, TICKET_W, TICKET_H);
-
-    // Descargar con blob
-    const blob = pdf.output("blob");
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "pase.pdf";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1500);
-
-  } catch (err) {
-    console.error(err);
-    showError("PDF ERROR: " + (err?.message || String(err)));
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = "Descargar PDF"; }
-  }
-}
-
-
-
-  function wirePdfButton_() {
-    const btnPdf = $("btnPdf");
-    if (!btnPdf) return;
-    btnPdf.onclick = downloadPdfFromPassCard_;
-  }
-
-  // ========= Load Ticket =========
-  async function loadTicket(token) {
-    clearError();
-    $("subtitle").textContent = "Buscando pase…";
-
-    const res = await fetch(`${API_BASE_URL}?action=ticket&token=${encodeURIComponent(token)}`);
-    const data = await res.json();
-
-    if (!data.ok) {
-      showError("Pase no encontrado");
-      return;
+    function hideInstallBanner_() {
+      const banner = $("installBanner");
+      if (!banner) return;
+      banner.style.display = "none";
     }
 
-    const t = data.ticket;
-    $("passCard").style.display = "block";
-    $("subtitle").textContent = "Pase cargado";
+    function wireInstallUI_() {
+      const btnInstall = $("btnInstall");
+      if (btnInstall) {
+        btnInstall.onclick = async () => {
+          if (deferredInstallPrompt) {
+            deferredInstallPrompt.prompt();
+            try { await deferredInstallPrompt.userChoice; } catch {}
+            deferredInstallPrompt = null;
+            hideInstallBanner_();
+            return;
+          }
 
-    setStatusBadge(t.status);
-    $("nombre").textContent = t.nombre || "-";
-    $("asiento").textContent = t.asiento || "-";
-    $("nombreEvento").textContent = t.nombreEvento || "-";
-    $("lugarDescripcion").textContent = t.lugarDescripcion || "-";
-    $("hora").textContent = t.hora || "-";
+          if (isIOS_()) {
+            alert('En iPhone:\n1) Toca "Compartir"\n2) "Agregar a pantalla de inicio"');
+            return;
+          }
 
-    const link = `${location.origin}${location.pathname}?token=${encodeURIComponent(token)}`;
-    setQr(link);
-  }
+          if (isAndroid_()) {
+            alert('En Android:\nMenú ⋮ → "Agregar a pantalla principal"');
+            return;
+          }
 
-  // ========= INIT =========
-  wireInstallUI_();
-  wirePdfButton_();
+          alert('Usa el menú del navegador para agregar a pantalla principal.');
+        };
+      }
 
-  const token = getTokenFromQuery();
-  if (!token) {
-    showError("Falta token");
-  } else {
-    loadTicket(token);
-  }
-</script>
+      const close = $("installCloseBtn");
+      if (close) close.onclick = hideInstallBanner_;
 
+      const bannerInstallBtn = $("installBtn");
+      if (bannerInstallBtn) {
+        bannerInstallBtn.onclick = () => {
+          if (btnInstall) btnInstall.click();
+        };
+      }
 
+      if (isIOS_() && !isStandalone_()) showInstallBanner_();
+    }
 
+    // ========= PDF =========
+    function loadScriptOnce_(src) {
+      return new Promise((resolve, reject) => {
+        if (document.querySelector(`script[src="${src}"]`)) return resolve();
+        const s = document.createElement("script");
+        s.src = src;
+        s.async = true;
+        s.onload = resolve;
+        s.onerror = () => reject(new Error("No se pudo cargar: " + src));
+        document.head.appendChild(s);
+      });
+    }
+
+    async function downloadPdfFromPassCard_() {
+      const btn = $("btnPdf");
+      const card = $("passCard");
+      const actions = document.querySelector(".actions");
+
+      try {
+        clearError();
+        if (btn) { btn.disabled = true; btn.textContent = "Generando…"; }
+        if (!card) throw new Error("No se encontró #passCard.");
+
+        await loadScriptOnce_("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
+        await loadScriptOnce_("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
+
+        const jsPDF = window.jspdf && window.jspdf.jsPDF;
+        if (!jsPDF) throw new Error("jsPDF no disponible (window.jspdf.jsPDF).");
+        if (typeof html2canvas === "undefined") throw new Error("html2canvas no disponible.");
+
+        // Modo export: no botones, no wrap
+        card.classList.add("export-mode");
+        if (actions) actions.classList.add("pdf-hide");
+
+        // Forzar colores para captura
+        const prevBg = card.style.backgroundColor;
+        const prevColor = card.style.color;
+        card.style.backgroundColor = "#111827";
+        card.style.color = "#e5e7eb";
+
+        let canvas;
+        try {
+          canvas = await html2canvas(card, { scale: 2, backgroundColor: "#111827" });
+        } finally {
+          card.style.backgroundColor = prevBg;
+          card.style.color = prevColor;
+          if (actions) actions.classList.remove("pdf-hide");
+          card.classList.remove("export-mode");
+        }
+
+        const imgData = canvas.toDataURL("image/png");
+
+        // ✅ PDF A4 pero ticket grande y centrado (sin verse "arriba con vacío")
+        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = pdf.internal.pageSize.getHeight();
+
+        // Ocupa 85% del alto de la hoja, manteniendo proporción
+        const targetH = pageH * 0.85;
+        const targetW = (canvas.width / canvas.height) * targetH;
+
+        const x = (pageW - targetW) / 2;
+        const y = (pageH - targetH) / 2;
+
+        pdf.addImage(imgData, "PNG", x, y, targetW, targetH);
+
+        // Descargar (Blob)
+        const blob = pdf.output("blob");
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "pase.pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+
+      } catch (err) {
+        console.error(err);
+        showError("PDF ERROR: " + (err?.message || String(err)));
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = "Descargar PDF"; }
+      }
+    }
+
+    function wirePdfButton_() {
+      const btnPdf = $("btnPdf");
+      if (!btnPdf) return;
+      btnPdf.onclick = () => downloadPdfFromPassCard_();
+    }
+
+    // ========= Load Ticket =========
+    async function loadTicket(token) {
+      clearError();
+      const subtitle = $("subtitle");
+      if (subtitle) subtitle.textContent = "Buscando pase…";
+
+      let res;
+      try {
+        res = await fetch(`${API_BASE_URL}?action=ticket&token=${encodeURIComponent(token)}`);
+      } catch (e) {
+        showError("No se pudo conectar al servidor.");
+        if (subtitle) subtitle.textContent = "Error";
+        return;
+      }
+
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        showError("Respuesta inválida del servidor.");
+        if (subtitle) subtitle.textContent = "Error";
+        return;
+      }
+
+      if (!data.ok) {
+        showError("Pase no encontrado.");
+        if (subtitle) subtitle.textContent = "No encontrado";
+        return;
+      }
+
+      const t = data.ticket;
+
+      $("passCard").style.display = "block";
+      if (subtitle) subtitle.textContent = "Pase cargado";
+
+      setStatusBadge(t.status);
+      $("nombre").textContent = t.nombre || "-";
+      $("asiento").textContent = t.asiento || "-";
+      $("nombreEvento").textContent = t.nombreEvento || "-";
+      $("lugarDescripcion").textContent = t.lugarDescripcion || "-";
+
+      // Formato mejor para hora (si viene ISO)
+      const horaRaw = t.hora || "-";
+      let horaTxt = horaRaw;
+      // intenta parsear ISO
+      const d = new Date(horaRaw);
+      if (horaRaw !== "-" && !isNaN(d.getTime())) {
+        horaTxt = d.toLocaleString();
+      }
+      $("hora").textContent = horaTxt;
+
+      const link = `${location.origin}${location.pathname}?token=${encodeURIComponent(token)}`;
+      setQr(link);
+    }
+
+    // ========= INIT =========
+    wireInstallUI_();
+    wirePdfButton_();
+
+    const token = getTokenFromQuery();
+    if (!token) {
+      showError("Falta token. Regresa y pega tu token.");
+      const subtitle = $("subtitle");
+      if (subtitle) subtitle.textContent = "Falta token";
+    } else {
+      loadTicket(token);
+    }
+  </script>
 </body>
 </html>
