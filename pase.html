@@ -38,12 +38,10 @@
       .topbar, #installBanner, .actions, .muted { display:none !important; }
     }
 
-    .pdf-hide { display: none !important; }
-
-    /* Modo exportación para que el layout NO se rompa en la captura */
-    .export-mode .actions { display: none !important; }
+    .pdf-hide { display:none !important; }
+    .export-mode .actions { display:none !important; }
     .export-mode .row { flex-wrap: nowrap !important; }
-    .export-mode .col { min-width: 0 !important; } /* permite encoger columnas */
+    .export-mode .col { min-width: 0 !important; }
 
 
   </style>
@@ -245,14 +243,15 @@ async function downloadPdfFromPassCard_() {
     await loadScriptOnce_("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
     await loadScriptOnce_("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
 
-    if (!window.jspdf?.jsPDF) throw new Error("jsPDF no disponible.");
+    const jsPDF = window.jspdf && window.jspdf.jsPDF;
+    if (!jsPDF) throw new Error("jsPDF no disponible (window.jspdf.jsPDF).");
     if (typeof html2canvas === "undefined") throw new Error("html2canvas no disponible.");
 
-    // ---- MODO EXPORT (evita que se rompa el layout y oculta botones) ----
+    // ---- MODO EXPORTACIÓN (evita que el QR se vaya fuera) ----
     card.classList.add("export-mode");
     if (actions) actions.classList.add("pdf-hide");
 
-    // Forzar tema oscuro en captura
+    // Forzar colores para captura (evita fondo blanco)
     const prevBg = card.style.backgroundColor;
     const prevColor = card.style.color;
     card.style.backgroundColor = "#111827";
@@ -262,7 +261,7 @@ async function downloadPdfFromPassCard_() {
     try {
       canvas = await html2canvas(card, { scale: 2, backgroundColor: "#111827" });
     } finally {
-      // restaurar UI
+      // Restaurar UI
       card.style.backgroundColor = prevBg;
       card.style.color = prevColor;
       if (actions) actions.classList.remove("pdf-hide");
@@ -271,28 +270,30 @@ async function downloadPdfFromPassCard_() {
 
     const imgData = canvas.toDataURL("image/png");
 
-    const { jsPDF } = window.jspdf;
+    // 🎟️ Ticket: ancho fijo, alto proporcional a la captura
+    const MARGIN = 3;      // mm
+    const TICKET_W = 90;   // mm
+    const ratio = canvas.height / canvas.width;
+    const TICKET_H = TICKET_W * ratio;
 
-    // ✅ Ticket: ancho fijo (90mm) y altura proporcional a la captura
-    const MARGIN = 3;          // mm
-    const TICKET_W = 90;       // mm (ancho fijo)
-
-    const ratio = canvas.height / canvas.width; // ojo: alto/ancho
-    const TICKET_H = TICKET_W * ratio;          // altura proporcional
-
-    // Página exacta del ticket + márgenes
     const pageW = TICKET_W + MARGIN * 2;
     const pageH = TICKET_H + MARGIN * 2;
 
-    const pdf = new jsPDF({
-      unit: "mm",
-      format: [pageW, pageH]
-    });
+    // ✅ Forma más confiable para custom size
+    const pdf = new jsPDF("l", "mm", [pageW, pageH]); // "l" landscape
+    // Si lo quieres vertical, usa: new jsPDF("p","mm",[pageW,pageH])
 
-    // Dibujar la imagen ocupando el área útil exacta
+    // DEBUG: muestra tamaño real de página (para confirmar que NO es A4)
+    const realW = pdf.internal.pageSize.getWidth();
+    const realH = pdf.internal.pageSize.getHeight();
+    // Si aquí te sale ~297x210, SIGUE siendo A4 y no está tomando el size.
+    // Lo mostramos en pantalla:
+    showError(`PDF page size (mm): ${realW.toFixed(1)} x ${realH.toFixed(1)}\n(Debería ser ~${pageW.toFixed(1)} x ${pageH.toFixed(1)})`);
+
+    // Dibuja la imagen ocupando el área útil
     pdf.addImage(imgData, "PNG", MARGIN, MARGIN, TICKET_W, TICKET_H);
 
-    // Descargar blob (más confiable)
+    // Descargar con blob
     const blob = pdf.output("blob");
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -310,6 +311,7 @@ async function downloadPdfFromPassCard_() {
     if (btn) { btn.disabled = false; btn.textContent = "Descargar PDF"; }
   }
 }
+
 
 
   function wirePdfButton_() {
