@@ -46,18 +46,19 @@
 
   <script>
 
-  (function redirectIfHasSavedTicket(){
-  const isStandalone =
-    window.matchMedia("(display-mode: standalone)").matches ||
-    window.navigator.standalone === true;
+  (function redirectIfHasSavedTicket() {
+  const url = new URL(location.href);
 
-  if (!isStandalone) return; // ✅ en navegador normal NO redirigir
+  // ✅ Solo redirigir si el arranque viene del PWA instalado
+  const launchedFromPwa = url.searchParams.get("source") === "pwa";
+  if (!launchedFromPwa) return;
 
   const saved = localStorage.getItem("ultimoTiketToken");
   if (saved) {
     location.replace(`./pase.html?token=${encodeURIComponent(saved)}`);
   }
 })();
+
 
 
     function go() {

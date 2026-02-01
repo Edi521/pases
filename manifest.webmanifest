@@ -1,7 +1,7 @@
 {
   "name": "Boletos",
   "short_name": "Boletos",
-  "start_url": "/pases/index.html",
+  "start_url": "/pases/index.html?source=pwa",
   "scope": "/pases/",
   "display": "standalone",
   "background_color": "#0b1220",
