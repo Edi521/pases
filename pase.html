@@ -139,18 +139,66 @@
       border-color: #334155;
     }
 
-    @media (max-width: 520px) {
-      /* En pantallas chicas, reducimos QR */
-      .col-qr { flex-basis: 170px; min-width: 170px; }
-      .qr { padding: 8px; border-radius: 12px; }
-      #passCard { padding: 14px; }
-      #passCard .value { font-size: 14px; }
+    /* ===============================
+   3 MEDIA QUERIES: grande / mediana / pequeña
+   =============================== */
+
+/* ---------- PANTALLAS GRANDES ---------- */
+@media (min-width: 1024px) {
+  /* Ticket más cómodo en desktop */
+  #passCard {
+    width: min(760px, 92vw);
+    padding: 18px;
+  }
+
+  /* QR grande */
+  .col-qr { flex: 0 0 260px; min-width: 260px; }
+  .qr { padding: 12px; border-radius: 14px; }
+
+  /* Tipografía */
+  #passCard .value { font-size: 15px; line-height: 1.35; }
+  #passCard .label { font-size: 12px; margin-top: 8px; }
+
+  /* Botones */
+  #actionsBar { width: min(760px, 92vw); }
+}
+
+    /* ---------- PANTALLAS MEDIANAS ---------- */
+    @media (min-width: 600px) and (max-width: 1023px) {
+    #passCard {
+        width: min(700px, 94vw);
+        padding: 16px;
     }
 
-    @media (max-width: 420px){
-      /* Botones apilados en móvil angosto */
-      #actionsBar { grid-template-columns: 1fr; }
+    .col-qr { flex: 0 0 220px; min-width: 220px; }
+    .qr { padding: 10px; border-radius: 14px; }
+
+    #passCard .value { font-size: 14px; line-height: 1.4; }
+    #passCard .label { font-size: 12px; margin-top: 8px; }
+
+    #actionsBar { width: min(700px, 94vw); }
     }
+
+    /* ---------- PANTALLAS PEQUEÑAS ---------- */
+    @media (max-width: 599px) {
+    /* En móvil, el ticket se hace más compacto */
+    #passCard {
+        width: 94vw;
+        padding: 14px;
+    }
+
+    /* QR más chico para dejar espacio a la hora */
+    .col-qr { flex: 0 0 170px; min-width: 170px; }
+    .qr { padding: 8px; border-radius: 12px; }
+
+    /* Tipografía más pequeña + line-height para que NO se corte la hora */
+    #passCard .value { font-size: 13px; line-height: 1.45; }
+    #passCard .label { font-size: 11px; margin-top: 7px; }
+
+    /* Botones apilados en móvil */
+    #actionsBar { width: 94vw; grid-template-columns: 1fr; }
+    }
+
   </style>
 </head>
 
