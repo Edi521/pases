@@ -377,89 +377,101 @@
     }
 
     async function downloadPdfFromPassCard_() {
-      const btn = $("btnPdf");
-      const card = $("passCard");
-      const actionsBar = $("actionsBar");
+  const btn = document.getElementById("btnPdf");
+  const card = document.getElementById("passCard");
+  const actionsBar = document.getElementById("actionsBar");
 
-      try {
-        clearError();
-        if (btn) { btn.disabled = true; btn.textContent = "Generando…"; }
-        if (!card) throw new Error("No se encontró #passCard.");
+  try {
+    clearError();
+    if (btn) { btn.disabled = true; btn.textContent = "Generando…"; }
+    if (!card) throw new Error("No se encontró #passCard.");
 
-        await loadScriptOnce_("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
-        await loadScriptOnce_("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
+    await loadScriptOnce_("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
+    await loadScriptOnce_("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
 
-        const jsPDF = window.jspdf && window.jspdf.jsPDF;
-        if (!jsPDF) throw new Error("jsPDF no disponible (window.jspdf.jsPDF).");
-        if (typeof html2canvas === "undefined") throw new Error("html2canvas no disponible.");
+    const jsPDF = window.jspdf && window.jspdf.jsPDF;
+    if (!jsPDF) throw new Error("jsPDF no disponible (window.jspdf.jsPDF).");
+    if (typeof html2canvas === "undefined") throw new Error("html2canvas no disponible.");
 
-        // Ocultar botones (fuera del ticket) durante captura
-        if (actionsBar) actionsBar.classList.add("pdf-hide");
+    // Ocultar botones durante captura
+    if (actionsBar) actionsBar.classList.add("pdf-hide");
 
-        // Forzar colores para captura (evita fondo blanco)
-        const prevBg = card.style.backgroundColor;
-        const prevColor = card.style.color;
-        card.style.backgroundColor = "#111827";
-        card.style.color = "#e5e7eb";
+    // Forzar colores para captura
+    const prevBg = card.style.backgroundColor;
+    const prevColor = card.style.color;
+    card.style.backgroundColor = "#111827";
+    card.style.color = "#e5e7eb";
 
-        let canvas;
-        try {
-          canvas = await html2canvas(card, { scale: 3, backgroundColor: "#111827" });
-        } finally {
-          card.style.backgroundColor = prevBg;
-          card.style.color = prevColor;
-          if (actionsBar) actionsBar.classList.remove("pdf-hide");
-        }
-
-        const imgData = canvas.toDataURL("image/png");
-
-        // ✅ PDF A4, ticket grande y centrado (se ve bien en cualquier visor)
-        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-
-        const pageW = pdf.internal.pageSize.getWidth();
-        const pageH = pdf.internal.pageSize.getHeight();
-
-        // Márgenes “visuales” en la hoja
-        const maxW = pageW * 0.92;
-        const maxH = pageH * 0.85;
-
-        // Proporción del pase
-        const ratio = canvas.width / canvas.height;
-
-        // Primero probamos por altura, luego verificamos ancho
-        let drawH = maxH;
-        let drawW = ratio * drawH;
-
-        // Si por altura se pasa de ancho, ajustamos por ancho
-        if (drawW > maxW) {
-        drawW = maxW;
-        drawH = drawW / ratio;
-        }
-
-        // Centrado exacto
-        const x = (pageW - drawW) / 2;
-        const y = (pageH - drawH) / 2;
-
-        pdf.addImage(imgData, "PNG", x, y, drawW, drawH);
-
-        // Descargar (Blob)
-        const blob = pdf.output("blob");
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "pase.pdf";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 1500);
-
-      } catch (err) {
-        console.error(err);
-        showError("PDF ERROR: " + (err?.message || String(err)));
-      } finally {
-        if (btn) { btn.disabled = false; btn.textContent = "Descargar PDF"; }
-      }
+    let canvas;
+    try {
+      canvas = await html2canvas(card, { scale: 2, backgroundColor: "#111827" });
+    } finally {
+      card.style.backgroundColor = prevBg;
+      card.style.color = prevColor;
+      if (actionsBar) actionsBar.classList.remove("pdf-hide");
     }
+
+    const imgData = canvas.toDataURL("image/png");
+
+    // ✅ A4 LANDSCAPE (ideal para ticket)
+    const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+
+    const pageW = pdf.internal.pageSize.getWidth();   // ~297
+    const pageH = pdf.internal.pageSize.getHeight();  // ~210
+
+    const margin = 10; // mm
+    const maxW = pageW - margin * 2;
+    const maxH = pageH - margin * 2;
+
+    // Proporción real de la imagen capturada
+    const ratio = canvas.width / canvas.height;
+
+    // Escalar para que quepa en W y en H (sin recorte)
+    let drawW = maxW;
+    let drawH = drawW / ratio;
+
+    if (drawH > maxH) {
+      drawH = maxH;
+      drawW = drawH * ratio;
+    }
+
+    // Centrado + clamp (nunca negativo)
+    let x = (pageW - drawW) / 2;
+    let y = (pageH - drawH) / 2;
+
+    if (x < margin) x = margin;
+    if (y < margin) y = margin;
+
+    // DEBUG: muestra números para confirmar (puedes quitarlo después)
+    showError(
+      `PDF DEBUG\n` +
+      `page: ${pageW.toFixed(1)}x${pageH.toFixed(1)} mm\n` +
+      `img ratio: ${ratio.toFixed(3)}\n` +
+      `draw: ${drawW.toFixed(1)}x${drawH.toFixed(1)} mm\n` +
+      `pos: x=${x.toFixed(1)} y=${y.toFixed(1)}`
+    );
+
+    pdf.addImage(imgData, "PNG", x, y, drawW, drawH, undefined, "FAST");
+
+    // Descargar
+    const blob = pdf.output("blob");
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "pase.pdf";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+
+  } catch (err) {
+    console.error(err);
+    showError("PDF ERROR: " + (err?.message || String(err)));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Descargar PDF"; }
+  }
+}
+
 
     function wirePdfButton_() {
       const btnPdf = $("btnPdf");
