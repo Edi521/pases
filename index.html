@@ -79,10 +79,11 @@
       if (e.key === "Enter") go();
     });
 
-    if("serviceWorker" in navigator){
-      navigator.serviceWorker.register("./servicie-worker.js")
-        .catch(console.erro);
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/pases/servicio-worker.js", { scope: "/pases/" })
+      .catch(console.error);
     }
+
   </script>
 </body>
 </html>
