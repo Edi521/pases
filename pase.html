@@ -404,7 +404,7 @@
 
         let canvas;
         try {
-          canvas = await html2canvas(card, { scale: 2, backgroundColor: "#111827" });
+          canvas = await html2canvas(card, { scale: 3, backgroundColor: "#111827" });
         } finally {
           card.style.backgroundColor = prevBg;
           card.style.color = prevColor;
@@ -419,13 +419,28 @@
         const pageW = pdf.internal.pageSize.getWidth();
         const pageH = pdf.internal.pageSize.getHeight();
 
-        const targetH = pageH * 0.85;
-        const targetW = (canvas.width / canvas.height) * targetH;
+        // Márgenes “visuales” en la hoja
+        const maxW = pageW * 0.92;
+        const maxH = pageH * 0.85;
 
-        const x = (pageW - targetW) / 2;
-        const y = (pageH - targetH) / 2;
+        // Proporción del pase
+        const ratio = canvas.width / canvas.height;
 
-        pdf.addImage(imgData, "PNG", x, y, targetW, targetH);
+        // Primero probamos por altura, luego verificamos ancho
+        let drawH = maxH;
+        let drawW = ratio * drawH;
+
+        // Si por altura se pasa de ancho, ajustamos por ancho
+        if (drawW > maxW) {
+        drawW = maxW;
+        drawH = drawW / ratio;
+        }
+
+        // Centrado exacto
+        const x = (pageW - drawW) / 2;
+        const y = (pageH - drawH) / 2;
+
+        pdf.addImage(imgData, "PNG", x, y, drawW, drawH);
 
         // Descargar (Blob)
         const blob = pdf.output("blob");
