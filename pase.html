@@ -102,8 +102,6 @@
 <!-- QR local (ligero, no bloquea) -->
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
 <script>
   // ========= CONFIG =========
   const API_BASE_URL = "https://script.google.com/macros/s/AKfycbxb7tNEfgSrmGHAYDYR76rJw3eS9XJ2XG2JaDppxiS1ls0j_iQJck5599wGbkBlvxezZg/exec";
@@ -275,46 +273,57 @@
     });
   }
 
-  async function downloadPdfFromPassCard_() {
-    const card = document.getElementById("passCard");
+async function downloadPdfFromPassCard_() {
+  const card = document.getElementById("passCard");
+  if (!card) {
+    showError("No se encontró #passCard.");
+    return;
+  }
 
-// Guarda estilos inline actuales
-const prevBg = card.style.backgroundColor;
-const prevColor = card.style.color;
+  // Cargar libs solo al descargar (si no existen)
+  await loadScriptOnce_("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
+  await loadScriptOnce_("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
 
-// Fuerza el tema oscuro (igual que tu UI)
-card.style.backgroundColor = "#111827";
-card.style.color = "#e5e7eb";
+  // Guarda estilos inline actuales
+  const prevBg = card.style.backgroundColor;
+  const prevColor = card.style.color;
 
-try {
-  const canvas = await html2canvas(card, {
-    scale: 2,
-    backgroundColor: "#111827" // IMPORTANTÍSIMO: fondo del canvas
-  });
+  // Fuerza el tema oscuro (igual que tu UI)
+  card.style.backgroundColor = "#111827";
+  card.style.color = "#e5e7eb";
 
-  const imgData = canvas.toDataURL("image/png");
+  try {
+    const canvas = await html2canvas(card, {
+      scale: 2,
+      backgroundColor: "#111827"
+    });
 
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const imgData = canvas.toDataURL("image/png");
 
-  const pageW = pdf.internal.pageSize.getWidth();
-  const pageH = pdf.internal.pageSize.getHeight();
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-  const imgW = pageW * 0.90;
-  const imgH = (canvas.height * imgW) / canvas.width;
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
 
-  const x = (pageW - imgW) / 2;
-  const y = (pageH - imgH) / 2;
+    const imgW = pageW * 0.90;
+    const imgH = (canvas.height * imgW) / canvas.width;
 
-  pdf.addImage(imgData, "PNG", x, y, imgW, imgH);
-  pdf.save("pase.pdf");
-} finally {
-  // Restaura
-  card.style.backgroundColor = prevBg;
-  card.style.color = prevColor;
+    const x = (pageW - imgW) / 2;
+    const y = (pageH - imgH) / 2;
+
+    pdf.addImage(imgData, "PNG", x, y, imgW, imgH);
+    pdf.save("pase.pdf");
+  } catch (err) {
+    console.error(err);
+    showError("No se pudo generar el PDF.");
+  } finally {
+    // Restaura
+    card.style.backgroundColor = prevBg;
+    card.style.color = prevColor;
+  }
 }
 
-    }
 
   function wirePdfButton_() {
     const btnPdf = $("btnPdf");
