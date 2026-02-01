@@ -1,350 +1,372 @@
 <!doctype html>
 <html lang="es">
-
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Mi Ticket</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mi Ticket</title>
 
-    <!-- PWA -->
-    <link rel="manifest" href="manifest.webmanifest">
-    <link rel="apple-touch-icon" href="icons/icon.png">
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#111827" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
-    <meta name="theme-color" content="#111827" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background:#0b1220; color:#e5e7eb; }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 18px; }
+    .card { background:#111827; border:1px solid #1f2937; border-radius: 14px; padding: 16px; }
+    .row { display:flex; gap: 12px; flex-wrap: wrap; }
+    .col { flex: 1; min-width: 220px; }
+    h1 { font-size: 20px; margin: 0 0 8px; }
+    .muted { color:#9ca3af; font-size: 14px; }
+    .label { color:#9ca3af; font-size: 12px; margin-top: 10px; }
+    .value { font-size: 16px; margin-top: 2px; word-break: break-word; }
+    .badge { display:inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; border:1px solid #334155; }
+    .ok { background:#052e1a; border-color:#14532d; }
+    .warn { background:#2a1d05; border-color:#78350f; }
+    .bad { background:#2a0a0a; border-color:#7f1d1d; }
+    .btn { display:inline-block; padding: 10px 12px; border-radius: 10px; border:1px solid #334155; background:#0f172a; color:#e5e7eb; text-decoration:none; cursor:pointer; }
+    .btn:active { transform: translateY(1px); }
+    .qr { width: 220px; height: 220px; background:#fff; border-radius: 12px; display:flex; align-items:center; justify-content:center; }
+    .topbar { display:flex; justify-content:space-between; align-items:center; gap: 10px; margin-bottom: 12px; }
+    .error { background:#2a0a0a; border:1px solid #7f1d1d; border-radius: 12px; padding: 12px; white-space: pre-wrap; }
+    code { color:#93c5fd; }
 
-    <style>
-        body {
-            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-            margin: 0;
-            background: #0b1220;
-            color: #e5e7eb;
-        }
-
-        .wrap {
-            max-width: 720px;
-            margin: 0 auto;
-            padding: 18px;
-        }
-
-        .card {
-            background: #111827;
-            border: 1px solid #1f2937;
-            border-radius: 14px;
-            padding: 16px;
-        }
-
-        .row {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .col {
-            flex: 1;
-            min-width: 220px;
-        }
-
-        h1 {
-            font-size: 20px;
-            margin: 0 0 8px;
-        }
-
-        .muted {
-            color: #9ca3af;
-            font-size: 14px;
-        }
-
-        .label {
-            color: #9ca3af;
-            font-size: 12px;
-            margin-top: 10px;
-        }
-
-        .value {
-            font-size: 16px;
-            margin-top: 2px;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 999px;
-            font-size: 12px;
-            border: 1px solid #334155;
-        }
-
-        .ok {
-            background: #052e1a;
-            border-color: #14532d;
-        }
-
-        .warn {
-            background: #2a1d05;
-            border-color: #78350f;
-        }
-
-        .bad {
-            background: #2a0a0a;
-            border-color: #7f1d1d;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 10px 12px;
-            border-radius: 10px;
-            border: 1px solid #334155;
-            background: #0f172a;
-            color: #e5e7eb;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .btn:active {
-            transform: translateY(1px);
-        }
-
-        .qr {
-            width: 220px;
-            height: 220px;
-            background: #fff;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .topbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        .error {
-            background: #2a0a0a;
-            border: 1px solid #7f1d1d;
-            border-radius: 12px;
-            padding: 12px;
-        }
-
-        code {
-            color: #93c5fd;
-        }
-    </style>
+    input.token {
+      flex:1; min-width:260px; padding:10px 12px;
+      border-radius:10px; border:1px solid #334155;
+      background:#0f172a; color:#e5e7eb; outline:none;
+    }
+  </style>
 </head>
 
 <body>
-    <div class="wrap">
-        <div class="topbar">
-            <div>
-                <h1>🎟️ Mi Ticket</h1>
-                <div class="muted" id="subtitle">Cargando…</div>
-            </div>
-            <a class="btn" href="#/checkin" title="Solo staff">Check-in</a>
-        </div>
+  <!-- Banner de instalación -->
+  <div id="installBanner" style="display:none; position:sticky; top:0; z-index:9999; background:#0f172a; border-bottom:1px solid #334155;">
+    <div style="max-width:720px; margin:0 auto; padding:12px 18px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:220px;">
+        <div style="font-weight:700;">📌 Obtener boleto</div>
+        <div style="color:#9ca3af; font-size:13px;">Agrega este boleto a tu pantalla principal para tenerlo a la mano.</div>
+      </div>
+      <button id="installBtn" class="btn">Agregar</button>
+      <button id="installCloseBtn" class="btn" style="opacity:.8;">Cerrar</button>
+    </div>
+  </div>
 
-        <div id="content" class="card" style="display:none;">
-            <div class="row">
-                <div class="col">
-                    <div class="label">Estado</div>
-                    <div class="value" id="status"></div>
-
-                    <div class="label">Nombre</div>
-                    <div class="value" id="nombre"></div>
-
-                    <div class="label">Asiento</div>
-                    <div class="value" id="asiento"></div>
-
-                    <div class="label">Evento</div>
-                    <div class="value" id="nombreEvento"></div>
-
-                    <div class="label">Lugar</div>
-                    <div class="value" id="lugarDescripcion"></div>
-
-                    <div class="label">Hora</div>
-                    <div class="value" id="hora"></div>
-                </div>
-
-                <div class="col">
-                    <div class="label">QR</div>
-                    <div class="qr">
-                        <img id="qrImg" alt="QR" width="200" height="200" />
-                    </div>
-                    <div class="muted" style="margin-top:10px;">
-                        Si no puedes instalar, guarda este link o toma captura.
-                    </div>
-                    <div style="margin-top:10px;">
-                        <button class="btn" id="copyLink">Copiar link</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="empty" class="card">
-            <div class="muted" style="margin-bottom:10px;">
-                Pega tu token para abrir tu ticket:
-            </div>
-        
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                <input id="tokenInput" placeholder="Pega aquí tu token"
-                    style="flex:1; min-width:260px; padding:10px 12px; border-radius:10px; border:1px solid #334155; background:#0f172a; color:#e5e7eb; outline:none;" />
-        
-                <button class="btn" id="openTicketBtn">Abrir</button>
-            </div>
-        
-            <div class="muted" style="margin-top:12px;">
-                O abre con un link como: <code>#/t/TU_TOKEN</code>
-            </div>
-        </div>
-
-
-        <div id="errorBox" class="error" style="display:none; margin-top:12px;"></div>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>🎟️ Mi Ticket</h1>
+        <div class="muted" id="subtitle">Listo</div>
+      </div>
+      <a class="btn" href="#/checkin" title="Solo staff">Check-in</a>
     </div>
 
-    <script>
-        // 1) Pega aquí tu URL de Apps Script terminando en /exec
-        const API_BASE_URL = "https://script.google.com/macros/s/AKfycbxb7tNEfgSrmGHAYDYR76rJw3eS9XJ2XG2JaDppxiS1ls0j_iQJck5599wGbkBlvxezZg/exec";
+    <div id="content" class="card" style="display:none;">
+      <div class="row">
+        <div class="col">
+          <div class="label">Estado</div>
+          <div class="value" id="status"></div>
 
-        // 2) Utilidad: leer ruta hash
-        function getRoute() {
-            const hash = location.hash || "";
-            // Ej: "#/t/ABC" -> ["t","ABC"]
-            const parts = hash.replace(/^#\/?/, "").split("/").filter(Boolean);
-            return parts;
+          <div class="label">Nombre</div>
+          <div class="value" id="nombre"></div>
+
+          <div class="label">Asiento</div>
+          <div class="value" id="asiento"></div>
+
+          <div class="label">Evento</div>
+          <div class="value" id="nombreEvento"></div>
+
+          <div class="label">Lugar</div>
+          <div class="value" id="lugarDescripcion"></div>
+
+          <div class="label">Hora</div>
+          <div class="value" id="hora"></div>
+        </div>
+
+        <div class="col">
+          <div class="label">QR</div>
+          <div class="qr">
+            <img id="qrImg" alt="QR" width="200" height="200" />
+          </div>
+          <div class="muted" style="margin-top:10px;">
+            Tip: agrega este boleto a tu pantalla principal para tenerlo disponible offline (parcial).
+          </div>
+          <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn" id="copyLink">Copiar link</button>
+            <button class="btn" id="showInstall">Obtener boleto</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pantalla inicial para pegar token -->
+    <div id="empty" class="card">
+      <div class="muted" style="margin-bottom:10px;">
+        Pega tu token para abrir tu ticket:
+      </div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <input id="tokenInput" class="token" placeholder="Pega aquí tu token" />
+        <button class="btn" id="openTicketBtn">Abrir</button>
+      </div>
+
+      <div class="muted" style="margin-top:12px;">
+        O abre con un link como: <code>#/t/TU_TOKEN</code>
+      </div>
+    </div>
+
+    <div id="errorBox" class="error" style="display:none; margin-top:12px;"></div>
+  </div>
+
+  <script>
+    // =========================
+    // CONFIG
+    // =========================
+
+    // Pega aquí tu URL de Apps Script terminando en /exec
+    const API_BASE_URL = "https://script.google.com/macros/s/AKfycbxb7tNEfgSrmGHAYDYR76rJw3eS9XJ2XG2JaDppxiS1ls0j_iQJck5599wGbkBlvxezZg/exec";
+
+    // Registro de Service Worker (necesario para instalación en Android)
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+    }
+
+    // =========================
+    // Helpers
+    // =========================
+    function getRoute() {
+      const hash = location.hash || "";
+      const parts = hash.replace(/^#\/?/, "").split("/").filter(Boolean);
+      return parts;
+    }
+
+    function isIOS_() {
+      const ua = navigator.userAgent || "";
+      return /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+    }
+
+    function isStandalone_() {
+      return (window.navigator.standalone === true) ||
+             window.matchMedia("(display-mode: standalone)").matches;
+    }
+
+    function setStatusBadge(status) {
+      const el = document.getElementById("status");
+      const s = (status || "").toUpperCase();
+
+      let cls = "badge";
+      let label = s || "DESCONOCIDO";
+
+      if (s === "ISSUED") { cls += " ok"; label = "VÁLIDO"; }
+      else if (s === "USED") { cls += " warn"; label = "YA USADO"; }
+      else if (s === "CANCELED" || s === "EXPIRED") { cls += " bad"; label = s; }
+
+      el.innerHTML = `<span class="${cls}">${label}</span>`;
+    }
+
+    // MVP QR: servicio público. Luego lo cambiamos a QR local (sin terceros).
+    function setQr(link) {
+      const img = document.getElementById("qrImg");
+      const url = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(link);
+      img.src = url;
+    }
+
+    function showError(msg) {
+      const box = document.getElementById("errorBox");
+      box.style.display = "block";
+      box.textContent = msg;
+    }
+
+    function clearError() {
+      const box = document.getElementById("errorBox");
+      box.style.display = "none";
+      box.textContent = "";
+    }
+
+    // =========================
+    // Ticket
+    // =========================
+    async function loadTicket(token) {
+      clearError();
+
+      if (!API_BASE_URL.includes("/exec")) {
+        showError("Configura API_BASE_URL con tu URL de Apps Script /exec.");
+        return;
+      }
+
+      const url = `${API_BASE_URL}?action=ticket&token=${encodeURIComponent(token)}`;
+      const res = await fetch(url, { method: "GET" });
+
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        showError("Respuesta inválida del servidor (no es JSON). Revisa API_BASE_URL.");
+        return;
+      }
+
+      if (!data.ok) {
+        showError(`No se pudo cargar el ticket: ${data.error || "ERROR"}`);
+        return;
+      }
+
+      const t = data.ticket;
+
+      document.getElementById("content").style.display = "block";
+      document.getElementById("empty").style.display = "none";
+      document.getElementById("subtitle").textContent = "Ticket cargado";
+
+      setStatusBadge(t.status);
+      document.getElementById("nombre").textContent = t.nombre || "-";
+      document.getElementById("asiento").textContent = t.asiento || "-";
+      document.getElementById("nombreEvento").textContent = t.nombreEvento || "-";
+      document.getElementById("lugarDescripcion").textContent = t.lugarDescripcion || "-";
+
+      // hora puede ser string o Date serializado
+      document.getElementById("hora").textContent =
+        (typeof t.hora === "string" && t.hora.trim().length > 0)
+          ? t.hora
+          : (t.hora ? new Date(t.hora).toLocaleString() : "-");
+
+      // Link del ticket que metemos al QR
+      const ticketLink = `${location.origin}${location.pathname}#/t/${encodeURIComponent(token)}`;
+      setQr(ticketLink);
+
+      // Copiar link
+      const copyBtn = document.getElementById("copyLink");
+      copyBtn.onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(ticketLink);
+          copyBtn.textContent = "¡Copiado!";
+          setTimeout(() => copyBtn.textContent = "Copiar link", 1200);
+        } catch {
+          showError("No se pudo copiar. Copia manualmente el link del navegador.");
+        }
+      };
+
+      // Botón “Obtener boleto”
+      const showInstall = document.getElementById("showInstall");
+      showInstall.onclick = () => showInstallBanner_();
+    }
+
+    // =========================
+    // Abrir por token (input)
+    // =========================
+    function wireTokenOpener() {
+      const input = document.getElementById("tokenInput");
+      const btn = document.getElementById("openTicketBtn");
+      if (!input || !btn) return;
+
+      const go = () => {
+        const token = (input.value || "").trim();
+        if (!token) return;
+        location.hash = `#/t/${encodeURIComponent(token)}`;
+      };
+
+      btn.onclick = go;
+      input.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") go();
+      });
+    }
+
+    // =========================
+    // Install banner logic
+    // =========================
+    let deferredInstallPrompt = null;
+
+    function showInstallBanner_() {
+      const banner = document.getElementById("installBanner");
+      if (!banner) return;
+
+      if (isStandalone_()) return; // ya instalada
+      banner.style.display = "block";
+    }
+
+    function hideInstallBanner_() {
+      const banner = document.getElementById("installBanner");
+      if (!banner) return;
+      banner.style.display = "none";
+    }
+
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      showInstallBanner_();
+    });
+
+    window.addEventListener("appinstalled", () => {
+      deferredInstallPrompt = null;
+      hideInstallBanner_();
+    });
+
+    function wireInstallBanner_() {
+      const btn = document.getElementById("installBtn");
+      const close = document.getElementById("installCloseBtn");
+      if (!btn || !close) return;
+
+      close.onclick = () => hideInstallBanner_();
+
+      btn.onclick = async () => {
+        // ANDROID: diálogo nativo
+        if (deferredInstallPrompt) {
+          deferredInstallPrompt.prompt();
+          try { await deferredInstallPrompt.userChoice; } catch (_) {}
+          deferredInstallPrompt = null;
+          hideInstallBanner_();
+          return;
         }
 
-        function setStatusBadge(status) {
-            const el = document.getElementById("status");
-            const s = (status || "").toUpperCase();
-
-            let cls = "badge";
-            let label = s || "DESCONOCIDO";
-
-            if (s === "ISSUED") { cls += " ok"; label = "VÁLIDO"; }
-            else if (s === "USED") { cls += " warn"; label = "YA USADO"; }
-            else if (s === "CANCELED" || s === "EXPIRED") { cls += " bad"; label = s; }
-            else { cls += ""; }
-
-            el.innerHTML = `<span class="${cls}">${label}</span>`;
+        // iOS: instrucciones
+        if (isIOS_()) {
+          alert('En iPhone:\n1) Toca "Compartir" (cuadro con flecha)\n2) "Agregar a pantalla de inicio"');
+          return;
         }
 
-        // Permite abrir ticket pegando token en un input
-            function wireTokenOpener() {
-                const input = document.getElementById("tokenInput");
-                const btn = document.getElementById("openTicketBtn");
-                if (!input || !btn) return;
+        // otros
+        alert("Usa el menú del navegador para 'Agregar a pantalla principal'.");
+      };
 
-                const go = () => {
-                    const token = (input.value || "").trim();
-                    if (!token) return;
-                    location.hash = `#/t/${encodeURIComponent(token)}`;
-                };
+      // iOS: no hay beforeinstallprompt, lo mostramos igual
+      if (isIOS_() && !isStandalone_()) {
+        showInstallBanner_();
+      }
+    }
 
-                btn.onclick = go;
-                input.addEventListener("keydown", (ev) => {
-                    if (ev.key === "Enter") go();
-                });
-            }
+    // =========================
+    // Router
+    // =========================
+    function render() {
+      clearError();
+      const parts = getRoute();
 
-            wireTokenOpener();
+      document.getElementById("content").style.display = "none";
+      document.getElementById("empty").style.display = "block";
+      document.getElementById("subtitle").textContent = "Listo";
 
+      if (parts.length === 0) return;
 
-        // QR sin dependencias: usamos un servicio público para el MVP
-        // (Luego lo cambiamos a QR local sin depender de terceros)
-        function setQr(link) {
-            const img = document.getElementById("qrImg");
-            const url = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(link);
-            img.src = url;
-        }
+      // Ticket: #/t/<token>
+      if (parts[0] === "t" && parts[1]) {
+        loadTicket(parts[1]);
+        return;
+      }
 
-        function showError(msg) {
-            const box = document.getElementById("errorBox");
-            box.style.display = "block";
-            box.textContent = msg;
-        }
-
-        function clearError() {
-            const box = document.getElementById("errorBox");
-            box.style.display = "none";
-            box.textContent = "";
-        }
-
-        async function loadTicket(token) {
-            clearError();
-
-            if (!API_BASE_URL.includes("/exec")) {
-                showError("Configura API_BASE_URL con tu URL de Apps Script /exec.");
-                return;
-            }
-
-            const url = `${API_BASE_URL}?action=ticket&token=${encodeURIComponent(token)}`;
-
-            const res = await fetch(url, { method: "GET" });
-            const data = await res.json();
-
-            if (!data.ok) {
-                showError(`No se pudo cargar el ticket: ${data.error || "ERROR"}`);
-                return;
-            }
-
-            const t = data.ticket;
-
-            document.getElementById("content").style.display = "block";
-            document.getElementById("empty").style.display = "none";
-            document.getElementById("subtitle").textContent = "Ticket cargado";
-
-            setStatusBadge(t.status);
-            document.getElementById("nombre").textContent = t.nombre || "-";
-            document.getElementById("asiento").textContent = t.asiento || "-";
-            document.getElementById("nombreEvento").textContent = t.nombreEvento || "-";
-            document.getElementById("lugarDescripcion").textContent = t.lugarDescripcion || "-";
-            document.getElementById("hora").textContent = (t.hora && typeof t.hora === "string") ? t.hora : (t.hora ? new Date(t.hora).toLocaleString() : "-");
-
-            // El link del ticket (lo que metemos al QR)
-            const ticketLink = `${location.origin}${location.pathname}#/t/${encodeURIComponent(token)}`;
-            setQr(ticketLink);
-
-            const copyBtn = document.getElementById("copyLink");
-            copyBtn.onclick = async () => {
-                try {
-                    await navigator.clipboard.writeText(ticketLink);
-                    copyBtn.textContent = "¡Copiado!";
-                    setTimeout(() => copyBtn.textContent = "Copiar link", 1200);
-                } catch {
-                    showError("No se pudo copiar. Copia manualmente el link del navegador.");
-                }
-            };
-        }
-
-        function render() {
-            const parts = getRoute();
-            document.getElementById("content").style.display = "none";
-            document.getElementById("empty").style.display = "block";
-            document.getElementById("subtitle").textContent = "Listo";
-
-            if (parts.length === 0) return;
-
-            // Ticket: #/t/<token>
-            if (parts[0] === "t" && parts[1]) {
-                loadTicket(parts[1]);
-                return;
-            }
-
-            // Placeholder: luego hacemos la pantalla de checkin
-            if (parts[0] === "checkin") {
-                document.getElementById("empty").innerHTML = `
+      // Placeholder: luego haremos check-in con cámara + POST checkin
+      if (parts[0] === "checkin") {
+        document.getElementById("empty").innerHTML = `
           <div class="muted">
             Pantalla de check-in aún no implementada.
             <div style="margin-top:10px;">Siguiente paso: cámara + POST checkin.</div>
           </div>`;
-                return;
-            }
-        }
+        return;
+      }
+    }
 
-        window.addEventListener("hashchange", render);
-        render();
-    </script>
+    // init
+    wireTokenOpener();
+    wireInstallBanner_();
+    window.addEventListener("hashchange", render);
+    render();
+  </script>
 </body>
-
 </html>
