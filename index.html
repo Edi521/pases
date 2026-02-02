@@ -59,7 +59,7 @@
   const launchedFromPwa = url.searchParams.get("source") === "pwa";
   if (!launchedFromPwa) return;
 
-  const saved = localStorage.getItem("ultimoTiketToken");
+  const saved = localStorage.getItem("lastTicketToken");
   if (saved) {
     location.replace(`./pase.html?token=${encodeURIComponent(saved)}`);
   }

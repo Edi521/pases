@@ -6,249 +6,208 @@
   <title>Mi pase</title>
 
   <!-- PWA -->
-  <link rel="manifest" href="manifest.webmanifest?v=4">
+  <link rel="manifest" href="manifest.webmanifest?v=6">
   <meta name="theme-color" content="#111827" />
-  <!-- Favicon clásico -->
-<link rel="icon" href="/pases/icons/icon.jpg" type="image/png">
-
-<!-- Apple (iPhone / iPad) -->
-<link rel="apple-touch-icon" href="/pases/icons/icon.jpg">
-
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Boletos">
+
+  <!-- Favicons -->
+  <link rel="icon" href="/pases/icons/icon.png" type="image/png">
+  <link rel="apple-touch-icon" href="/pases/icons/icon.png">
 
   <style>
     /* ===============================
-   BASE (MÓVIL Y TABLET POR DEFECTO)
-   =============================== */
+      BASE (MÓVIL Y TABLET POR DEFECTO)
+      =============================== */
 
-body {
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  margin: 0;
-  background: #0b1220;
-  color: #e5e7eb;
-}
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      margin: 0;
+      background: #0b1220;
+      color: #e5e7eb;
+    }
 
-.wrap {
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 18px;
-}
+    .wrap { max-width: 980px; margin: 0 auto; padding: 18px; }
 
-h1 {
-  font-size: 20px;
-  margin: 0 0 8px;
-}
+    h1 { font-size: 20px; margin: 0 0 8px; }
+    .muted { color:#9ca3af; font-size: 14px; }
 
-.muted {
-  color: #9ca3af;
-  font-size: 14px;
-}
+    .label { color:#9ca3af; font-size: 15px; margin-top: 8px; }
+    .value { font-size: 14px; margin-top: 2px; line-height: 1.45; word-break: break-word; }
 
-.label {
-  color: #9ca3af;
-  font-size: 15px;
-  margin-top: 8px;
-}
+    /* Badge */
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid #334155;
+    }
+    .ok { background: #052e1a; border-color: #14532d; }
+    .warn { background: #2a1d05; border-color: #78350f; }
+    .bad { background: #2a0a0a; border-color: #7f1d1d; }
 
-.value {
-  font-size: 14px;
-  margin-top: 2px;
-  line-height: 1.45;
-  word-break: break-word;
-}
+    /* Botones */
+    .btn {
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: #e5e7eb;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: 600;
+      user-select: none;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn[disabled] { opacity: .7; cursor: not-allowed; }
 
-/* Badge */
-.badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  border: 1px solid #334155;
-}
+    /* Topbar */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
 
-.ok { background: #052e1a; border-color: #14532d; }
-.warn { background: #2a1d05; border-color: #78350f; }
-.bad { background: #2a0a0a; border-color: #7f1d1d; }
+    .error {
+      background:#2a0a0a;
+      border:1px solid #7f1d1d;
+      border-radius:12px;
+      padding:12px;
+      display:none;
+      margin-top:12px;
+      white-space: pre-wrap;
+    }
 
-/* Botones */
-.btn {
-  padding: 12px;
-  border-radius: 12px;
-  border: 1px solid #334155;
-  background: #0f172a;
-  color: #e5e7eb;
-  cursor: pointer;
-  text-decoration: none;
-  font-weight: 600;
-}
+    /* Banner instalación */
+    #installBanner {
+      display:none;
+      position: sticky;
+      top: 0;
+      z-index: 9999;
+      background: #0f172a;
+      border-bottom: 1px solid #334155;
+    }
 
-.btn:active {
-  transform: translateY(1px);
-}
+    /* Ocultar cosas solo al exportar PDF */
+    .pdf-hide { display:none !important; }
 
-/* Topbar */
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
+    /* ===============================
+      TICKET (MÓVIL / TABLET)
+      =============================== */
 
-/* ===============================
-   TICKET (MÓVIL / TABLET)
-   =============================== */
+    #passCard {
+      width: 94vw;
+      max-width: 700px;
 
-#passCard {
-  width: 94vw;
-  max-width: 700px;
+      /* SIN ALTURA FIJA */
+      aspect-ratio: auto;
+      height: auto;
+      overflow: visible;
 
-  /* 🔑 CLAVE: SIN ALTURA FIJA */
-  aspect-ratio: auto;
-  height: auto;
-  overflow: visible;
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 16px;
+      padding: 20px 20px 34px 20px;
+      box-sizing: border-box;
 
-  background: #111827;
-  border: 1px solid #1f2937;
-  border-radius: 16px;
-  padding: 20px 20px 40px 20px;
-  box-sizing: border-box;
+      margin: 0 auto;
+      display: none;
+    }
 
-  margin: 0 auto;
-  display: none;
-}
+    .row {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      align-items: stretch;
+    }
 
-/* Layout interno */
-.row {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  align-items: stretch;
+    .col-info { flex: 1 1 auto; }
 
-  /* 🔑 CLAVE: NO estirar 
-  height: auto;
-  align-items: flex-start;
-  flex-wrap: nowrap;*/
-}
+    .col-qr {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
 
-.col-info {
-  flex: 1 1 auto;
-  /*min-width: 0;*/
-}
+    .col-qr .label { text-align: center; margin-bottom: 8px; }
 
-.col-qr {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
+    .qr {
+      width: min(280px, 90vw);
+      aspect-ratio: 1 / 1;
+      border-radius: 16px;
+      padding: 10px;
+      background: #ffffff;
+      box-sizing: border-box;
+    }
 
-.col-qr .label{
-  text-align: center;
-  margin-bottom: 8px;
-}
+    #qrImg { width: 100%; height: 100%; }
 
-.qr {
-  width: min(280px, 90vw);
-  aspect-ratio: 1 / 1;
-  border-radius: 16px;
-  padding: 10px;
-  background: #ffffff;
-}
+    #qrImg img,
+    #qrImg canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
 
+    /* Acciones (fuera del ticket) */
+    #actionsBar {
+      width: 94vw;
+      max-width: 700px;
+      margin: 12px auto 0;
+      display: none;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
 
-#qrImg img,
-#qrImg canvas {
-  width: 100% !important;
-  height: 100% !important;
-  display: block;
-}
+    #btnInstall { background: #2563eb; border-color: #1d4ed8; }
+    #btnPdf { background: #0f172a; border-color: #334155; }
 
-/* ===============================
-   ACCIONES (FUERA DEL TICKET)
-   =============================== */
+    /* ===============================
+      SOLO PC / DESKTOP (RIGIDEZ)
+      =============================== */
+    @media (min-width: 1024px) {
+      #passCard {
+        width: min(760px, 92vw);
+        aspect-ratio: 90 / 55;
+        overflow: hidden;
+        padding: 20px 24px;
+      }
 
-#actionsBar {
-  width: 94vw;
-  max-width: 700px;
-  margin: 12px auto 0;
-  display: none;
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
+      .row { flex-direction: row; align-items: center; }
 
-#btnInstall {
-  background: #2563eb;
-  border-color: #1d4ed8;
-}
+      .col-info { flex: 1 1 auto; transform: translateY(6px); }
 
-#btnPdf {
-  background: #0f172a;
-  border-color: #334155;
-}
+      .col-qr {
+        flex: 0 0 300px;
+        min-width: 300px;
+        transform: translateY(6px);
+      }
 
-/* ===============================
-   SOLO PC / DESKTOP (RIGIDEZ)
-   =============================== */
+      .qr {
+        width: 100%;
+        max-width: 270px;
+        padding: 10px;
+        border-radius: 18px;
+      }
 
-@media (min-width: 1024px) {
+      .value { font-size: 15px; line-height: 1.35; }
 
-  #passCard {
-    width: min(760px, 92vw);
-
-    /* ✅ AQUÍ y SOLO AQUÍ es rígido */
-    aspect-ratio: 90 / 55;
-    overflow: hidden;
-  }
-
-  .row {
-    flex-direction: row;
-    align-items: center;
-  }
-
-  .col-info{
-    flex: 1 1 auto;
-    transform: translateY(10px);
-  }
-
-  .col-qr {
-    flex: 0 0 280px;
-    min-width: 280px;
-    align-items: center;
-    justify-content: center;
-    transform: translateY(10px);
-  }
-
-  .qr{
-    width: 100%;
-    max-width: 260px;
-    aspect-ratio: 1/1;
-    padding: 10px;
-    border-radius: 18px;
-  }
-
-  .col-qr .label{
-    margin-bottom: 10px;
-  }
-
-  .value {
-    font-size: 15px;
-    line-height: 1.35;
-  }
-
-  #actionsBar {
-    width: min(760px, 92vw);
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
+      #actionsBar {
+        width: min(760px, 92vw);
+        grid-template-columns: 1fr 1fr;
+      }
+    }
   </style>
-
 </head>
 
 <body>
 
+  <!-- Banner instalación -->
   <div id="installBanner">
     <div style="max-width:980px;margin:0 auto;padding:12px 18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
       <div style="flex:1; min-width:220px;">
@@ -266,7 +225,7 @@ h1 {
         <h1>🎟️ Mi pase</h1>
         <div class="muted" id="subtitle">Cargando…</div>
       </div>
-      <a class="btn" href="index.html">Buscar otro</a>
+      <a class="btn" href="index.html" id="backBtn">Buscar otro</a>
     </div>
 
     <!-- TICKET -->
@@ -295,7 +254,7 @@ h1 {
         <div class="col col-qr">
           <div class="label">QR</div>
           <div class="qr">
-            <div id="qrImg" style="width:100%; height:100%;"></div>
+            <div id="qrImg"></div>
           </div>
         </div>
       </div>
@@ -316,21 +275,21 @@ h1 {
   <script>
     // ========= CONFIG =========
     const API_BASE_URL = "https://script.google.com/macros/s/AKfycbxb7tNEfgSrmGHAYDYR76rJw3eS9XJ2XG2JaDppxiS1ls0j_iQJck5599wGbkBlvxezZg/exec";
+    const LS_LAST_TOKEN_KEY = "lastTicketToken";
 
     // ========= Service Worker =========
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/pases/servicio-worker.js", { scope: "/pases/" })
-      .catch(console.error);
+        .catch(console.error);
     }
-
 
     // ========= Helpers =========
     const $ = (id) => document.getElementById(id);
 
-    document.querySelector('a[href="index.html"]')?.addEventListener("click", () => {
-      localStorage.removeItem("lastTicketToken");
+    // Botón "Buscar otro" borra token recordado
+    $("backBtn")?.addEventListener("click", () => {
+      localStorage.removeItem(LS_LAST_TOKEN_KEY);
     });
-
 
     function showError(msg) {
       const box = $("errorBox");
@@ -380,9 +339,79 @@ h1 {
       el.innerHTML = `<span class="${cls}">${label}</span>`;
     }
 
+    // Formateo fecha/hora
+    function formatDateOnly_(v) {
+  if (!v) return "";
+
+  // Fecha válida de Sheets
+  if (v instanceof Date && !isNaN(v.getTime())) {
+    const dd = String(v.getDate()).padStart(2, "0");
+    const mm = String(v.getMonth() + 1).padStart(2, "0");
+    const yyyy = v.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  }
+
+  return String(v).trim();
+}
+
+function formatTime_(v) {
+  if (!v) return "";
+
+  // Hora viene como Date (Sheets)
+  if (v instanceof Date && !isNaN(v.getTime())) {
+    const hh = String(v.getHours()).padStart(2, "0");
+    const mm = String(v.getMinutes()).padStart(2, "0");
+    return `${hh}:${mm}`;
+  }
+
+  // Hora como string ("17:00")
+  const s = String(v).trim();
+  if (/^\d{1,2}:\d{2}$/.test(s)) {
+    const [h, m] = s.split(":");
+    return `${String(h).padStart(2, "0")}:${m}`;
+  }
+
+  return s;
+}
+
+/*function formatFechaHora_(fecha, hora) {
+  if (!fecha && !hora) return "-";
+
+  let fechaTxt = "";
+  let horaTxt = "";
+
+  // 📅 Fecha
+  if (fecha instanceof Date && !isNaN(fecha.getTime())) {
+    const dd = String(fecha.getDate()).padStart(2, "0");
+    const mm = String(fecha.getMonth() + 1).padStart(2, "0");
+    const yyyy = fecha.getFullYear();
+    fechaTxt = `${dd}/${mm}/${yyyy}`;
+  }
+
+  // ⏰ Hora (SIN Date())
+  if (hora instanceof Date && !isNaN(hora.getTime())) {
+    const hh = String(hora.getHours()).padStart(2, "0");
+    const min = String(hora.getMinutes()).padStart(2, "0");
+    horaTxt = `${hh}:${min}`;
+  } else if (hora) {
+    const s = String(hora).trim();
+    if (/^\d{1,2}:\d{2}$/.test(s)) {
+      const [h, m] = s.split(":");
+      horaTxt = `${String(h).padStart(2, "0")}:${m}`;
+    }
+  }
+
+  if (!fechaTxt && !horaTxt) return "-";
+  if (fechaTxt && horaTxt) return `${fechaTxt} ${horaTxt} hr`;
+  return fechaTxt || `${horaTxt} hr`;
+}*/
+
+
+    // QR robusto (evita cuadro blanco)
     function setQr(link) {
       const container = $("qrImg");
       if (!container) return;
+
       container.innerHTML = "";
 
       if (typeof QRCode === "undefined") {
@@ -390,11 +419,15 @@ h1 {
         return;
       }
 
-      new QRCode(container, {
-        text: link,
-        width: 260,
-        height: 260,
-        correctLevel: QRCode.CorrectLevel.M
+      requestAnimationFrame(() => {
+        container.innerHTML = "";
+        const size = Math.max(200, Math.min(320, container.clientWidth || 240));
+        new QRCode(container, {
+          text: link,
+          width: size,
+          height: size,
+          correctLevel: QRCode.CorrectLevel.M
+        });
       });
     }
 
@@ -426,39 +459,34 @@ h1 {
 
     function wireInstallUI_() {
       const btnInstall = $("btnInstall");
-      if (btnInstall) {
-        btnInstall.onclick = async () => {
-          if (deferredInstallPrompt) {
-            deferredInstallPrompt.prompt();
-            try { await deferredInstallPrompt.userChoice; } catch {}
-            deferredInstallPrompt = null;
-            hideInstallBanner_();
-            return;
-          }
-
-          if (isIOS_()) {
-            alert('En iPhone:\n1) Toca "Compartir"\n2) "Agregar a pantalla de inicio"');
-            return;
-          }
-
-          if (isAndroid_()) {
-            alert('En Android:\nMenú ⋮ → "Agregar a pantalla principal" o "Instalar app"');
-            return;
-          }
-
-          alert('Usa el menú del navegador para agregar a pantalla principal.');
-        };
-      }
-
-      const close = $("installCloseBtn");
-      if (close) close.onclick = hideInstallBanner_;
-
       const bannerInstallBtn = $("installBtn");
-      if (bannerInstallBtn) {
-        bannerInstallBtn.onclick = () => {
-          if (btnInstall) btnInstall.click();
-        };
-      }
+      const close = $("installCloseBtn");
+
+      const installAction = async () => {
+        if (deferredInstallPrompt) {
+          deferredInstallPrompt.prompt();
+          try { await deferredInstallPrompt.userChoice; } catch {}
+          deferredInstallPrompt = null;
+          hideInstallBanner_();
+          return;
+        }
+
+        if (isIOS_()) {
+          alert('En iPhone:\n1) Toca "Compartir"\n2) "Agregar a pantalla de inicio"');
+          return;
+        }
+
+        if (isAndroid_()) {
+          alert('En Android:\nMenú ⋮ → "Agregar a pantalla principal" o "Instalar app"');
+          return;
+        }
+
+        alert('Usa el menú del navegador para agregar a pantalla principal.');
+      };
+
+      if (btnInstall) btnInstall.onclick = installAction;
+      if (bannerInstallBtn) bannerInstallBtn.onclick = installAction;
+      if (close) close.onclick = hideInstallBanner_;
 
       if (isIOS_() && !isStandalone_()) showInstallBanner_();
     }
@@ -493,10 +521,8 @@ h1 {
         if (!jsPDF) throw new Error("jsPDF no disponible (window.jspdf.jsPDF).");
         if (typeof html2canvas === "undefined") throw new Error("html2canvas no disponible.");
 
-        // Ocultar botones (fuera del ticket) durante captura
         if (actionsBar) actionsBar.classList.add("pdf-hide");
 
-        // Forzar colores para captura (evita fondo blanco)
         const prevBg = card.style.backgroundColor;
         const prevColor = card.style.color;
         card.style.backgroundColor = "#111827";
@@ -513,36 +539,28 @@ h1 {
 
         const imgData = canvas.toDataURL("image/png");
 
-        // ✅ PDF A4, ticket grande y centrado (se ve bien en cualquier visor)
         const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-
         const pageW = pdf.internal.pageSize.getWidth();
         const pageH = pdf.internal.pageSize.getHeight();
 
-        // Márgenes “visuales” en la hoja
         const maxW = pageW * 0.92;
         const maxH = pageH * 0.85;
 
-        // Proporción del pase
         const ratio = canvas.width / canvas.height;
 
-        // Primero probamos por altura, luego verificamos ancho
         let drawH = maxH;
         let drawW = ratio * drawH;
 
-        // Si por altura se pasa de ancho, ajustamos por ancho
         if (drawW > maxW) {
-        drawW = maxW;
-        drawH = drawW / ratio;
+          drawW = maxW;
+          drawH = drawW / ratio;
         }
 
-        // Centrado exacto
         const x = (pageW - drawW) / 2;
         const y = (pageH - drawH) / 2;
 
         pdf.addImage(imgData, "PNG", x, y, drawW, drawH);
 
-        // Descargar (Blob)
         const blob = pdf.output("blob");
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -576,7 +594,7 @@ h1 {
       let res;
       try {
         res = await fetch(`${API_BASE_URL}?action=ticket&token=${encodeURIComponent(token)}`);
-      } catch (e) {
+      } catch {
         showError("No se pudo conectar al servidor.");
         if (subtitle) subtitle.textContent = "Error";
         return;
@@ -595,43 +613,33 @@ h1 {
         showError("Pase no encontrado.");
         if (subtitle) subtitle.textContent = "No encontrado";
         return;
-      }else{
-        //Guardar token como "último pase"
-        localStorage.setItem("ultimoTiketToken",token);
       }
+
+      // Guardar token como "último pase"
+      localStorage.setItem(LS_LAST_TOKEN_KEY, token);
 
       const t = data.ticket;
 
       // Mostrar ticket + acciones
-      const passCard = $("passCard");
-      const actionsBar = $("actionsBar");
-      if (passCard) passCard.style.display = "block";
-      if (actionsBar) actionsBar.style.display = "grid";
+      $("passCard").style.display = "block";
+      $("actionsBar").style.display = "grid";
       if (subtitle) subtitle.textContent = "Pase cargado";
 
+      // ✅ Nuevo contrato
       setStatusBadge(t.estatus);
-
       $("nombre").textContent = t.nombre || "-";
       $("asiento").textContent = t.asiento || "-";
-
-      // OJO: tus IDs en HTML deben coincidir
-      // Si tu HTML tiene id="nombreEvento" e id="lugarDescripcion", puedes seguir usando esos IDs
       $("nombreEvento").textContent = t.evento || "-";
       $("lugarDescripcion").textContent = t.lugar || "-";
-
-      // ✅ Fecha y hora (combinadas)
-      const fechaTxt = formatDate_(t.fecha);
-      const horaTxt  = (t.hora || "").toString().trim();
-
-      let fechaHora = "-";
-      if (fechaTxt !== "-" && horaTxt) fechaHora = `${fechaTxt}, ${horaTxt}`;
-      else if (fechaTxt !== "-") fechaHora = fechaTxt;
-      else if (horaTxt) fechaHora = horaTxt;
-
-      $("hora").textContent = fechaHora;
+      $("hora").textContent = t.fecha +" - " + t.hora +" hr";
 
 
-      const link = `${location.origin}${location.pathname}?token=${encodeURIComponent(token)}`;
+      console.log("ticket recibido:", t);
+      console.log("fecha:", t.fecha, "hora:", t.hora);
+
+
+      // ✅ QR siempre apunta al pase (URL canónica)
+      const link = `${location.origin}/pases/pase.html?token=${encodeURIComponent(token)}`;
       setQr(link);
     }
 
