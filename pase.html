@@ -609,18 +609,27 @@ h1 {
       if (actionsBar) actionsBar.style.display = "grid";
       if (subtitle) subtitle.textContent = "Pase cargado";
 
-      setStatusBadge(t.status);
+      setStatusBadge(t.estatus);
+
       $("nombre").textContent = t.nombre || "-";
       $("asiento").textContent = t.asiento || "-";
-      $("nombreEvento").textContent = t.nombreEvento || "-";
-      $("lugarDescripcion").textContent = t.lugarDescripcion || "-";
 
-      // Formato de hora (si viene en ISO)
-      const raw = t.hora || "-";
-      let horaTxt = raw;
-      const d = new Date(raw);
-      if (raw !== "-" && !isNaN(d.getTime())) horaTxt = d.toLocaleString();
-      $("hora").textContent = horaTxt;
+      // OJO: tus IDs en HTML deben coincidir
+      // Si tu HTML tiene id="nombreEvento" e id="lugarDescripcion", puedes seguir usando esos IDs
+      $("nombreEvento").textContent = t.evento || "-";
+      $("lugarDescripcion").textContent = t.lugar || "-";
+
+      // ✅ Fecha y hora (combinadas)
+      const fechaTxt = formatDate_(t.fecha);
+      const horaTxt  = (t.hora || "").toString().trim();
+
+      let fechaHora = "-";
+      if (fechaTxt !== "-" && horaTxt) fechaHora = `${fechaTxt}, ${horaTxt}`;
+      else if (fechaTxt !== "-") fechaHora = fechaTxt;
+      else if (horaTxt) fechaHora = horaTxt;
+
+      $("hora").textContent = fechaHora;
+
 
       const link = `${location.origin}${location.pathname}?token=${encodeURIComponent(token)}`;
       setQr(link);
